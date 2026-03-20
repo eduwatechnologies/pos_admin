@@ -1,23 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/auth-context'
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { ReceiptsTable } from './components/receipts-table'
 import { ReceiptDetailModal } from './components/receipt-detail-modal'
 import { Receipt } from '@/lib/types'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
+import { useListReceiptsQuery } from '@/redux/api/receipts-api'
 
 export default function ReceiptsPage() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const { currentShop } = useShop()
-  const [receipts, setReceipts] = useState<Receipt[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -27,33 +24,19 @@ export default function ReceiptsPage() {
     }
   }, [isAuthenticated, router])
 
+  const { data: receipts = [], error } = useListReceiptsQuery(
+    { shopId: currentShop?.id ?? '' },
+    { skip: !isAuthenticated || !currentShop }
+  )
+
   useEffect(() => {
-    let cancelled = false
-
-    const load = async () => {
-      if (!isAuthenticated || !currentShop) return
-      setIsLoading(true)
-      try {
-        const items = await api.receipts.list(currentShop.id)
-        if (!cancelled) setReceipts(items)
-      } catch (err) {
-        if (cancelled) return
-        toast({
-          title: 'Error',
-          description: err instanceof Error ? err.message : 'Failed to load receipts',
-          variant: 'destructive',
-        })
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, currentShop, toast])
+    if (!error) return
+    toast({
+      title: 'Error',
+      description: 'Failed to load receipts',
+      variant: 'destructive',
+    })
+  }, [error, toast])
 
   if (!isAuthenticated) {
     return null
@@ -86,10 +69,10 @@ export default function ReceiptsPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div>
+      {/* <div>
         <h1 className="text-3xl font-bold tracking-tight">Receipts</h1>
         <p className="text-muted-foreground mt-2">View and manage sales receipts</p>
-      </div>
+      </div> */}
 
       <ReceiptsTable
         receipts={receipts}

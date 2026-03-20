@@ -20,6 +20,7 @@ interface AddEmployeeModalProps {
   onOpenChange: (open: boolean) => void
   onSave: (employee: EmployeeFormData) => void | Promise<void>
   initialEmployee?: Employee
+  availableRoles: string[]
 }
 
 export function AddEmployeeModal({
@@ -27,6 +28,7 @@ export function AddEmployeeModal({
   onOpenChange,
   onSave,
   initialEmployee,
+  availableRoles,
 }: AddEmployeeModalProps) {
   const { toast } = useToast()
   const [formData, setFormData] = useState<EmployeeFormData>({
@@ -47,17 +49,18 @@ export function AddEmployeeModal({
         password: '',
       })
     } else {
+      const defaultRole = availableRoles[0] ?? 'cashier'
       setFormData({
         name: '',
         email: '',
         phone: '',
-        role: 'cashier',
+        role: defaultRole as any,
         status: 'active',
         salaryOrWage: 0,
         password: '',
       })
     }
-  }, [initialEmployee, open])
+  }, [availableRoles, initialEmployee, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -172,9 +175,12 @@ export function AddEmployeeModal({
                 onChange={e => setFormData({ ...formData, role: e.target.value as any })}
                 className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background"
                 required
-                disabled
               >
-                <option value="cashier">Cashier</option>
+                {availableRoles.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -196,7 +202,7 @@ export function AddEmployeeModal({
 
           <div className="space-y-2">
             <label htmlFor="salary" className="text-sm font-medium">
-              Monthly Wage/Salary ($)
+              Monthly Wage/Salary (₦)
             </label>
             <Input
               id="salary"

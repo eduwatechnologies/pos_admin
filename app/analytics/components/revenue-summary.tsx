@@ -1,18 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Users, ShoppingCart, DollarSign } from 'lucide-react'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
+import { useRevenueQuery } from '@/redux/api/analytics-api'
 
 export function RevenueSummary() {
   const { currentShop } = useShop()
-  const [stats, setStats] = useState({
-    today: { revenue: 0, transactions: 0, avgOrder: 0 },
-    week: { revenue: 0, transactions: 0, avgOrder: 0 },
-    month: { revenue: 0, transactions: 0, avgOrder: 0 },
-  })
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   const ranges = useMemo(() => {
     const today = new Date()
@@ -33,77 +29,63 @@ export function RevenueSummary() {
     }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
+  const skip = !currentShop
+  const { data: todayStats } = useRevenueQuery(
+    { shopId: currentShop?.id ?? '', from: ranges.today.from, to: ranges.today.to },
+    { skip }
+  )
+  const { data: weekStats } = useRevenueQuery(
+    { shopId: currentShop?.id ?? '', from: ranges.week.from, to: ranges.week.to },
+    { skip }
+  )
+  const { data: monthStats } = useRevenueQuery(
+    { shopId: currentShop?.id ?? '', from: ranges.month.from, to: ranges.month.to },
+    { skip }
+  )
 
-    const load = async () => {
-      if (!currentShop) return
-      try {
-        const [today, week, month] = await Promise.all([
-          api.analytics.revenue(currentShop.id, ranges.today),
-          api.analytics.revenue(currentShop.id, ranges.week),
-          api.analytics.revenue(currentShop.id, ranges.month),
-        ])
-        if (cancelled) return
-        setStats({
-          today: {
-            revenue: today.totalSales,
-            transactions: today.totalTransactions,
-            avgOrder: today.averageOrderValue,
-          },
-          week: {
-            revenue: week.totalSales,
-            transactions: week.totalTransactions,
-            avgOrder: week.averageOrderValue,
-          },
-          month: {
-            revenue: month.totalSales,
-            transactions: month.totalTransactions,
-            avgOrder: month.averageOrderValue,
-          },
-        })
-      } catch {
-        if (cancelled) return
-        setStats({
-          today: { revenue: 0, transactions: 0, avgOrder: 0 },
-          week: { revenue: 0, transactions: 0, avgOrder: 0 },
-          month: { revenue: 0, transactions: 0, avgOrder: 0 },
-        })
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentShop, ranges])
+  const stats = {
+    today: {
+      revenue: todayStats?.totalSales ?? 0,
+      transactions: todayStats?.totalTransactions ?? 0,
+      avgOrder: todayStats?.averageOrderValue ?? 0,
+    },
+    week: {
+      revenue: weekStats?.totalSales ?? 0,
+      transactions: weekStats?.totalTransactions ?? 0,
+      avgOrder: weekStats?.averageOrderValue ?? 0,
+    },
+    month: {
+      revenue: monthStats?.totalSales ?? 0,
+      transactions: monthStats?.totalTransactions ?? 0,
+      avgOrder: monthStats?.averageOrderValue ?? 0,
+    },
+  }
 
   const summaryCards = [
     {
       title: "Today's Revenue",
-      value: `$${stats.today.revenue.toFixed(2)}`,
+      value: money.format(stats.today.revenue),
       subtitle: `${stats.today.transactions} transactions`,
       icon: DollarSign,
       color: 'text-green-600',
     },
     {
       title: "This Week's Revenue",
-      value: `$${stats.week.revenue.toFixed(2)}`,
+      value: money.format(stats.week.revenue),
       subtitle: `${stats.week.transactions} transactions`,
       icon: TrendingUp,
       color: 'text-blue-600',
     },
     {
       title: "This Month's Revenue",
-      value: `$${stats.month.revenue.toFixed(2)}`,
+      value: money.format(stats.month.revenue),
       subtitle: `${stats.month.transactions} transactions`,
       icon: ShoppingCart,
       color: 'text-purple-600',
     },
     {
       title: 'Average Order Value',
-      value: `$${stats.month.avgOrder.toFixed(2)}`,
+      value: money.format(stats.month.avgOrder),
       subtitle: `Monthly average`,
       icon: Users,
       color: 'text-orange-600',

@@ -25,6 +25,7 @@ interface ReceiptsTableProps {
 export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<string>('all')
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter(r => {
@@ -96,7 +97,7 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
                     <TableCell className="text-sm">{receipt.customerName || 'N/A'}</TableCell>
                     <TableCell className="text-sm">{receipt.cashierName || 'N/A'}</TableCell>
                     <TableCell className="text-right font-medium">
-                      ${receipt.total.toFixed(2)}
+                      {money.format(receipt.total)}
                     </TableCell>
                     <TableCell className="text-sm capitalize">{receipt.paymentMethod}</TableCell>
                     <TableCell className="text-center">

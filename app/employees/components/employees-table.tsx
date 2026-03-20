@@ -26,6 +26,15 @@ export function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTablePr
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
+
+  const roleOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const e of employees) {
+      if (e.role) set.add(String(e.role))
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [employees])
 
   const filteredEmployees = useMemo(() => {
     return employees.filter(e => {
@@ -63,26 +72,19 @@ export function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTablePr
             >
               All Roles
             </button>
-            <button
-              onClick={() => setRoleFilter('admin')}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors capitalize ${
-                roleFilter === 'admin'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => setRoleFilter('cashier')}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors capitalize ${
-                roleFilter === 'cashier'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-accent'
-              }`}
-            >
-              Cashier
-            </button>
+            {roleOptions.map((r) => (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors capitalize ${
+                  roleFilter === r
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
           </div>
 
           <div className="flex gap-2">
@@ -163,7 +165,7 @@ export function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTablePr
                       {employee.joinDate.toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right text-sm">
-                      ${employee.salaryOrWage?.toFixed(2) ?? 'N/A'}
+                      {employee.salaryOrWage != null ? money.format(employee.salaryOrWage) : 'N/A'}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-2">

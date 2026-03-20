@@ -35,6 +35,7 @@ export function ReceiptDetailModal({
   onShare,
 }: ReceiptDetailModalProps) {
   if (!receipt) return null
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,8 +86,8 @@ export function ReceiptDetailModal({
                     <TableRow key={idx}>
                       <TableCell>{item.productName}</TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${item.subtotal.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{money.format(item.unitPrice)}</TableCell>
+                      <TableCell className="text-right">{money.format(item.subtotal)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -98,15 +99,15 @@ export function ReceiptDetailModal({
           <div className="space-y-2 border-t pt-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${receipt.subtotal.toFixed(2)}</span>
+              <span>{money.format(receipt.subtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tax (8%)</span>
-              <span>${receipt.tax.toFixed(2)}</span>
+              <span>{money.format(receipt.tax)}</span>
             </div>
             <div className="flex justify-between text-lg font-bold border-t pt-2">
               <span>Total</span>
-              <span>${receipt.total.toFixed(2)}</span>
+              <span>{money.format(receipt.total)}</span>
             </div>
           </div>
 

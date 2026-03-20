@@ -1,13 +1,14 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DollarSign, ShoppingCart, TrendingUp, Package } from 'lucide-react'
+import { DollarSign, ShoppingCart, TrendingUp, Package, Folder } from 'lucide-react'
 
 interface DashboardCardsProps {
   totalSales: number
   totalTransactions: number
   averageOrderValue: number
   lowStockProducts: number
+  categoriesCount?: number
 }
 
 export function DashboardCards({
@@ -15,11 +16,14 @@ export function DashboardCards({
   totalTransactions,
   averageOrderValue,
   lowStockProducts,
+  categoriesCount,
 }: DashboardCardsProps) {
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' })
+
   const cards = [
     {
       title: 'Total Sales',
-      value: `$${totalSales.toFixed(2)}`,
+      value: money.format(totalSales),
       icon: DollarSign,
       color: 'text-green-600',
     },
@@ -31,7 +35,7 @@ export function DashboardCards({
     },
     {
       title: 'Average Order Value',
-      value: `$${averageOrderValue.toFixed(2)}`,
+      value: money.format(averageOrderValue),
       icon: TrendingUp,
       color: 'text-purple-600',
     },
@@ -41,6 +45,16 @@ export function DashboardCards({
       icon: Package,
       color: 'text-orange-600',
     },
+    ...(typeof categoriesCount === 'number'
+      ? [
+          {
+            title: 'Categories',
+            value: categoriesCount.toString(),
+            icon: Folder,
+            color: 'text-sky-600',
+          },
+        ]
+      : []),
   ]
 
   return (

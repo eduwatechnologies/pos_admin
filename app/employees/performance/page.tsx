@@ -1,19 +1,19 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import { EmployeePerformance } from '@/lib/types'
+import { useEmployeePerformanceQuery } from '@/redux/api/analytics-api'
+import { useListEmployeesQuery } from '@/redux/api/employees-api'
 
 export default function PerformancePage() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const { currentShop } = useShop()
-  const [performanceData, setPerformanceData] = useState<EmployeePerformance[]>([])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -30,49 +30,35 @@ export default function PerformancePage() {
     return { from: from.toISOString(), to: to.toISOString() }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
+  const skip = !isAuthenticated || !currentShop
+  const { data: employees = [] } = useListEmployeesQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const { data: perf = [] } = useEmployeePerformanceQuery(
+    { shopId: currentShop?.id ?? '', from: range.from, to: range.to },
+    { skip }
+  )
 
-    const load = async () => {
-      if (!isAuthenticated || !currentShop) return
-      try {
-        const [employees, perf] = await Promise.all([
-          api.employees.list(currentShop.id),
-          api.analytics.employeePerformance(currentShop.id, range),
-        ])
-        if (cancelled) return
-
-        const byId = new Map(perf.map(p => [p.cashierUserId, p]))
-        const commissionRate = 0.05
-        const result: EmployeePerformance[] = employees.map(e => {
-          const p = byId.get(e.id)
-          const totalSales = p?.totalSales ?? 0
-          const transactionCount = p?.totalTransactions ?? 0
-          const averageOrderValue = transactionCount > 0 ? totalSales / transactionCount : 0
-          return {
-            employeeId: e.id,
-            employeeName: e.name,
-            totalSales,
-            transactionCount,
-            averageOrderValue,
-            commissionRate,
-            commissionEarned: totalSales * commissionRate,
-          }
-        })
-
-        result.sort((a, b) => b.totalSales - a.totalSales)
-        setPerformanceData(result)
-      } catch {
-        if (!cancelled) setPerformanceData([])
+  const performanceData = useMemo<EmployeePerformance[]>(() => {
+    const byId = new Map(perf.map((p) => [p.cashierUserId, p]))
+    const commissionRate = 0.05
+    const result: EmployeePerformance[] = employees.map((e) => {
+      const p = byId.get(e.id)
+      const totalSales = p?.totalSales ?? 0
+      const transactionCount = p?.totalTransactions ?? 0
+      const averageOrderValue = transactionCount > 0 ? totalSales / transactionCount : 0
+      return {
+        employeeId: e.id,
+        employeeName: e.name,
+        totalSales,
+        transactionCount,
+        averageOrderValue,
+        commissionRate,
+        commissionEarned: totalSales * commissionRate,
       }
-    }
+    })
 
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentShop, isAuthenticated, range])
+    result.sort((a, b) => b.totalSales - a.totalSales)
+    return result
+  }, [employees, perf])
 
   const topPerformers = performanceData.slice(0, 5)
 
@@ -85,6 +71,7 @@ export default function PerformancePage() {
   const totalCompanySales = performanceData.reduce((sum, emp) => sum + emp.totalSales, 0)
   const totalTransactions = performanceData.reduce((sum, emp) => sum + emp.transactionCount, 0)
   const avgOrderValue = totalTransactions > 0 ? totalCompanySales / totalTransactions : 0
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   if (!isAuthenticated) return null
 
@@ -102,7 +89,7 @@ export default function PerformancePage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Company Sales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalCompanySales.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">{money.format(totalCompanySales)}</div>
             <p className="text-xs text-muted-foreground mt-1">{totalTransactions} transactions</p>
           </CardContent>
         </Card>
@@ -112,7 +99,7 @@ export default function PerformancePage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Average Order Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${avgOrderValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{money.format(avgOrderValue)}</div>
             <p className="text-xs text-muted-foreground mt-1">Across all employees</p>
           </CardContent>
         </Card>
@@ -123,7 +110,7 @@ export default function PerformancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{topPerformers[0]?.employeeName || 'N/A'}</div>
-            <p className="text-xs text-muted-foreground mt-1">${topPerformers[0]?.totalSales.toFixed(2) || '0'}</p>
+            <p className="text-xs text-muted-foreground mt-1">{money.format(topPerformers[0]?.totalSales ?? 0)}</p>
           </CardContent>
         </Card>
       </div>
@@ -140,7 +127,7 @@ export default function PerformancePage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
               <YAxis />
-              <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+              <Tooltip formatter={(value) => money.format(Number(value) || 0)} />
               <Legend />
               <Bar dataKey="sales" fill="#0D9488" name="Sales" />
               <Bar dataKey="commission" fill="#F97316" name="Commission (5%)" />
@@ -177,13 +164,13 @@ export default function PerformancePage() {
                     <td className="py-3 px-4 font-medium">{emp.employeeName}</td>
                     <td className="py-3 px-4 text-right">{emp.transactionCount}</td>
                     <td className="py-3 px-4 text-right font-semibold">
-                      ${emp.totalSales.toFixed(2)}
+                      {money.format(emp.totalSales)}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      ${emp.averageOrderValue.toFixed(2)}
+                      {money.format(emp.averageOrderValue)}
                     </td>
                     <td className="py-3 px-4 text-right text-accent font-semibold">
-                      ${(emp.commissionEarned || 0).toFixed(2)}
+                      {money.format(emp.commissionEarned || 0)}
                     </td>
                   </tr>
                 ))}

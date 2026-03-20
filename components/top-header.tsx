@@ -21,6 +21,7 @@ function getTitleFromPath(pathname: string) {
   if (pathname.startsWith('/employees/performance')) return 'Employee Performance'
   if (pathname.startsWith('/employees')) return 'Employees'
   if (pathname.startsWith('/inventory')) return 'Inventory'
+  if (pathname.startsWith('/terminal')) return 'POS Terminal'
   if (pathname.startsWith('/receipts')) return 'Receipts'
   if (pathname.startsWith('/analytics')) return 'Analytics'
   if (pathname.startsWith('/settings')) return 'Settings'
@@ -49,10 +50,7 @@ export function TopHeader() {
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
       <div className="flex h-14 items-center justify-between gap-4 px-4 pl-16 md:pl-6">
         <div className="flex min-w-0 items-center gap-3">
-          <Link href="/dashboard" className="hidden md:block text-sm font-semibold text-foreground">
-            POS Dashboard
-          </Link>
-          <div className="hidden md:block h-5 w-px bg-border" />
+        
           <h2 className="truncate text-sm font-semibold text-foreground">{title}</h2>
         </div>
 

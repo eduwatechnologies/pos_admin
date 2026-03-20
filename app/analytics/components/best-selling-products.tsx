@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   BarChart,
@@ -12,11 +12,11 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
+import { useBestSellersQuery } from '@/redux/api/analytics-api'
 
 export function BestSellingProducts() {
   const { currentShop } = useShop()
-  const [items, setItems] = useState<Array<{ name: string; quantity: number; revenue: number }>>([])
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   const monthRange = useMemo(() => {
     const from = new Date()
@@ -27,34 +27,19 @@ export function BestSellingProducts() {
     return { from: from.toISOString(), to: to.toISOString() }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
+  const skip = !currentShop
+  const { data = [] } = useBestSellersQuery(
+    { shopId: currentShop?.id ?? '', from: monthRange.from, to: monthRange.to },
+    { skip }
+  )
 
-    const load = async () => {
-      if (!currentShop) return
-      try {
-        const data = await api.analytics.bestSellers(currentShop.id, monthRange)
-        if (cancelled) return
-        setItems(
-          data.slice(0, 10).map(d => ({
-            name: d.name.length > 20 ? d.name.substring(0, 17) + '...' : d.name,
-            quantity: d.qty,
-            revenue: Math.round(d.revenue * 100) / 100,
-          }))
-        )
-      } catch {
-        if (!cancelled) setItems([])
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentShop, monthRange])
-
-  const chartData = useMemo(() => items, [items])
+  const chartData = useMemo(() => {
+    return data.slice(0, 10).map((d) => ({
+      name: d.name.length > 20 ? d.name.substring(0, 17) + '...' : d.name,
+      quantity: d.qty,
+      revenue: Math.round(d.revenue * 100) / 100,
+    }))
+  }, [data])
 
   return (
     <Card>
@@ -80,7 +65,7 @@ export function BestSellingProducts() {
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--radius)',
               }}
-              formatter={(value: number) => `$${value.toFixed(2)}`}
+              formatter={(value: any) => money.format(Number(value) || 0)}
             />
             <Bar dataKey="revenue" fill="hsl(var(--chart-1))" radius={[8, 8, 0, 0]} />
           </BarChart>

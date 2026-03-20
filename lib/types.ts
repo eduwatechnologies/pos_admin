@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'cashier'
+export type UserRole = 'admin' | 'super_admin' | (string & {})
 export type UserStatus = 'active' | 'inactive'
 export type PaymentMethod = 'cash' | 'card' | 'digital'
 
@@ -31,11 +31,19 @@ export interface Product {
   id: string
   name: string
   sku: string
+  barcode?: string
   category: string
   price: number
   quantity: number
   reorderLevel: number
   shopId?: string
+  createdAt: Date
+}
+
+export interface Category {
+  id: string
+  name: string
+  isActive: boolean
   createdAt: Date
 }
 
@@ -111,6 +119,7 @@ export interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
+  register: (input: { name: string; email: string; password: string; shopName?: string; currency?: string }) => Promise<void>
   logout: () => void
   isAuthenticated: boolean
 }

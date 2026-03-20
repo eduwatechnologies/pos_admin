@@ -6,66 +6,101 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
+import { useGetSettingsQuery, useUpdateSettingsMutation } from '@/redux/api/settings-api'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+
+const PERMISSIONS = [
+  { key: 'dashboard', label: 'Dashboard', description: 'Access overview and KPIs' },
+  { key: 'terminal', label: 'Terminal', description: 'Create sales and scan items' },
+  { key: 'receipts', label: 'Receipts', description: 'View and manage transactions' },
+  { key: 'analytics', label: 'Analytics', description: 'View reports and trends' },
+  { key: 'inventory', label: 'Inventory', description: 'Manage products and stock' },
+  { key: 'employees', label: 'Employees', description: 'Manage staff accounts' },
+  { key: 'settings', label: 'Settings', description: 'Change shop and system configuration' },
+] as const
+
+type PermissionKey = (typeof PERMISSIONS)[number]['key']
+type RolePermissionsState = Record<string, Record<PermissionKey, boolean>>
+type SettingsForm = {
+  name: string
+  businessName: string
+  address: string
+  phone: string
+  currency: string
+  rolePermissions: RolePermissionsState
+}
 
 export default function SettingsPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { currentShop } = useShop()
   const { toast } = useToast()
-  const [form, setForm] = useState({
+  const [newRoleKey, setNewRoleKey] = useState('')
+  const [form, setForm] = useState<SettingsForm>({
     name: '',
     businessName: '',
     address: '',
     phone: '',
     currency: 'NGN',
+    rolePermissions: {
+      admin: {
+        dashboard: true,
+        terminal: true,
+        receipts: true,
+        analytics: true,
+        inventory: true,
+        employees: true,
+        settings: true,
+      },
+      cashier: {
+        dashboard: true,
+        terminal: true,
+        receipts: true,
+        analytics: false,
+        inventory: false,
+        employees: false,
+        settings: false,
+      },
+    },
   })
   const [initial, setInitial] = useState(form)
-  const [isSaving, setIsSaving] = useState(false)
 
   // Redirect non-admin users
   useEffect(() => {
-    if (user && user.role !== 'admin') {
+    if (user && user.role !== 'admin' && user.role !== 'super_admin') {
       router.push('/dashboard')
     }
   }, [user, router])
 
+  const skip = !user || (user.role !== 'admin' && user.role !== 'super_admin') || !currentShop
+  const { data: loadedSettings, error } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation()
+
   useEffect(() => {
-    let cancelled = false
+    if (!loadedSettings) return
+    setForm(loadedSettings)
+    setInitial(loadedSettings)
+  }, [loadedSettings])
 
-    const load = async () => {
-      if (!user || user.role !== 'admin' || !currentShop) return
-      try {
-        const settings = await api.settings.get(currentShop.id)
-        if (cancelled) return
-        setForm(settings)
-        setInitial(settings)
-      } catch (err) {
-        if (cancelled) return
-        toast({
-          title: 'Error',
-          description: err instanceof Error ? err.message : 'Failed to load settings',
-          variant: 'destructive',
-        })
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentShop, toast, user])
+  useEffect(() => {
+    if (!error) return
+    toast({
+      title: 'Error',
+      description: 'Failed to load settings',
+      variant: 'destructive',
+    })
+  }, [error, toast])
 
   const isDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial])
 
   const handleSave = async () => {
     if (!currentShop) return
-    setIsSaving(true)
     try {
-      const updated = await api.settings.update(currentShop.id, form)
+      const updated = await updateSettings({ shopId: currentShop.id, input: form }).unwrap()
       setForm(updated)
       setInitial(updated)
       toast({ title: 'Success', description: 'Settings saved' })
@@ -75,12 +110,10 @@ export default function SettingsPage() {
         description: err instanceof Error ? err.message : 'Failed to save settings',
         variant: 'destructive',
       })
-    } finally {
-      setIsSaving(false)
     }
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
     return null
   }
 
@@ -161,54 +194,165 @@ export default function SettingsPage() {
               <CardDescription>Define what each role can access</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-3">Admin Role</h4>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
-                      Access to all features
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
-                      Manage inventory
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
-                      Manage employees
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
-                      View analytics
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
-                      System settings
-                    </li>
-                  </ul>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Create roles, then switch off features you don’t want that role to use.
                 </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="New role (e.g. manager)"
+                    value={newRoleKey}
+                    onChange={(e) => setNewRoleKey(e.target.value)}
+                    className="h-9 w-full sm:w-[220px] px-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const raw = newRoleKey.trim().toLowerCase().replace(/\s+/g, '_')
+                      if (!raw || raw === 'admin' || raw === 'super_admin') return
+                      setForm((prev) => {
+                        if (prev.rolePermissions?.[raw]) return prev
+                        const allOn = PERMISSIONS.reduce((acc, p) => {
+                          acc[p.key] = true
+                          return acc
+                        }, {} as Record<PermissionKey, boolean>)
+                        return {
+                          ...prev,
+                          rolePermissions: {
+                            ...(prev.rolePermissions ?? {}),
+                            [raw]: allOn,
+                          },
+                        }
+                      })
+                      setNewRoleKey('')
+                    }}
+                  >
+                    Add Role
+                  </Button>
+                </div>
+              </div>
 
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-3">Cashier Role</h4>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-accent rounded-full mr-2"></span>
-                      View products
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-accent rounded-full mr-2"></span>
-                      Create receipts
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-accent rounded-full mr-2"></span>
-                      View own sales
-                    </li>
-                    <li className="flex items-center">
-                      <span className="inline-block w-2 h-2 bg-accent rounded-full mr-2"></span>
-                      Dashboard overview
-                    </li>
-                  </ul>
-                </div>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {Object.keys(form.rolePermissions ?? {})
+                  .sort((a, b) => {
+                    if (a === 'admin') return -1
+                    if (b === 'admin') return 1
+                    if (a === 'cashier') return -1
+                    if (b === 'cashier') return 1
+                    return a.localeCompare(b)
+                  })
+                  .map((roleKey) => {
+                  const enabledCount = PERMISSIONS.reduce((count, p) => {
+                    return count + (form.rolePermissions?.[roleKey]?.[p.key] ? 1 : 0)
+                  }, 0)
+
+                  const roleLabel = roleKey.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
+                  const roleDesc = roleKey === 'admin'
+                    ? 'Full access. Always enabled to avoid locking you out.'
+                    : 'Toggle what this role can use.'
+
+                  const setPermission = (perm: PermissionKey, value: boolean) => {
+                    setForm(prev => ({
+                      ...prev,
+                      rolePermissions: {
+                        ...prev.rolePermissions,
+                        [roleKey]: {
+                          ...prev.rolePermissions[roleKey],
+                          [perm]: value,
+                        },
+                      },
+                    }))
+                  }
+
+                  const setAll = (value: boolean) => {
+                    setForm(prev => ({
+                      ...prev,
+                      rolePermissions: {
+                        ...prev.rolePermissions,
+                        [roleKey]: PERMISSIONS.reduce((acc, p) => {
+                          acc[p.key] = value
+                          return acc
+                        }, {} as Record<PermissionKey, boolean>),
+                      },
+                    }))
+                  }
+
+                  return (
+                    <Card key={roleKey} className="border-border/60">
+                      <CardHeader className="space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-base">{roleLabel}</CardTitle>
+                              <Badge variant={roleKey === 'admin' ? 'default' : 'secondary'}>{enabledCount}/{PERMISSIONS.length}</Badge>
+                            </div>
+                            <CardDescription className="mt-1">{roleDesc}</CardDescription>
+                          </div>
+
+                          {roleKey !== 'admin' ? (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button type="button" size="sm" variant="outline" onClick={() => setAll(true)}>
+                                Enable all
+                              </Button>
+                              <Button type="button" size="sm" variant="outline" onClick={() => setAll(false)}>
+                                Disable all
+                              </Button>
+                              {roleKey !== 'cashier' ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setForm((prev) => {
+                                      const next = { ...(prev.rolePermissions ?? {}) }
+                                      delete next[roleKey]
+                                      return { ...prev, rolePermissions: next }
+                                    })
+                                  }}
+                                >
+                                  Delete
+                                </Button>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-2">
+                        {PERMISSIONS.map((p, idx) => {
+                          const checked = Boolean(form.rolePermissions?.[roleKey]?.[p.key])
+                          const disabled = roleKey === 'admin'
+                          return (
+                            <div key={p.key}>
+                              <div className="flex items-center justify-between gap-4 rounded-lg px-2 py-2 hover:bg-accent/40">
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium">{p.label}</div>
+                                  <div className="text-xs text-muted-foreground">{p.description}</div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="hidden sm:inline text-xs text-muted-foreground w-12 text-right">
+                                    {checked ? 'On' : 'Off'}
+                                  </span>
+                                  <Switch checked={checked} disabled={disabled} onCheckedChange={v => setPermission(p.key, v)} />
+                                </div>
+                              </div>
+                              {idx !== PERMISSIONS.length - 1 ? <Separator /> : null}
+                            </div>
+                          )
+                        })}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <Button onClick={handleSave} disabled={!currentShop || !isDirty || isSaving}>
+                  Save Changes
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -229,9 +373,6 @@ export default function SettingsPage() {
                   className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="NGN">NGN (₦)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
                 </select>
               </div>
               <div className="pt-2 flex justify-end">

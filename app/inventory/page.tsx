@@ -1,25 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/context/auth-context'
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import { Button } from '@/components/ui/button'
 import { InventoryTable } from './components/inventory-table'
 import { AddProductModal } from './components/add-product-modal'
 import { Product } from '@/lib/types'
-import { Plus } from 'lucide-react'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
+import { useListCategoriesQuery } from '@/redux/api/categories-api'
+import {
+  useCreateProductMutation,
+  useDeleteProductMutation,
+  useListProductsQuery,
+  useUpdateProductMutation,
+} from '@/redux/api/products-api'
 
 export default function InventoryPage() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const { currentShop } = useShop()
-  const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | undefined>()
 
@@ -29,37 +30,48 @@ export default function InventoryPage() {
     }
   }, [isAuthenticated, router])
 
+  const { data: products = [], isFetching: isLoading, error } = useListProductsQuery(
+    { shopId: currentShop?.id ?? '' },
+    { skip: !isAuthenticated || !currentShop }
+  )
+
+  const { data: categories = [], error: categoriesError } = useListCategoriesQuery(
+    { shopId: currentShop?.id ?? '' },
+    { skip: !isAuthenticated || !currentShop }
+  )
+
+  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation()
+  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation()
+  const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation()
+
   useEffect(() => {
-    let cancelled = false
+    if (!error) return
+    toast({
+      title: 'Error',
+      description: 'Failed to load products',
+      variant: 'destructive',
+    })
+  }, [error, toast])
 
-    const load = async () => {
-      if (!isAuthenticated || !currentShop) return
-      setIsLoading(true)
-      try {
-        const items = await api.products.list(currentShop.id)
-        if (!cancelled) setProducts(items)
-      } catch (err) {
-        if (cancelled) return
-        toast({
-          title: 'Error',
-          description: err instanceof Error ? err.message : 'Failed to load products',
-          variant: 'destructive',
-        })
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, currentShop, toast])
+  useEffect(() => {
+    if (!categoriesError) return
+    toast({
+      title: 'Error',
+      description: 'Failed to load categories',
+      variant: 'destructive',
+    })
+  }, [categoriesError, toast])
 
   if (!isAuthenticated) {
     return null
   }
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>(['General'])
+    categories.forEach((c) => set.add(c.name))
+    if (editingProduct?.category) set.add(editingProduct.category)
+    return Array.from(set)
+  }, [categories, editingProduct?.category])
 
   const handleAddProduct = async (productData: Partial<Product>) => {
     if (!currentShop) {
@@ -73,24 +85,31 @@ export default function InventoryPage() {
 
     try {
       if (editingProduct) {
-        const updated = await api.products.update(currentShop.id, editingProduct.id, {
+        await updateProduct({
+          shopId: currentShop.id,
+          productId: editingProduct.id,
+          input: {
           name: productData.name ?? editingProduct.name,
+          category: productData.category ?? editingProduct.category,
           sku: productData.sku ?? editingProduct.sku,
           price: productData.price ?? editingProduct.price,
           quantity: productData.quantity ?? editingProduct.quantity,
           reorderLevel: productData.reorderLevel ?? editingProduct.reorderLevel,
-        })
-        setProducts(prev => prev.map(p => (p.id === updated.id ? updated : p)))
+          },
+        }).unwrap()
         setEditingProduct(undefined)
       } else {
-        const created = await api.products.create(currentShop.id, {
+        await createProduct({
+          shopId: currentShop.id,
+          input: {
           name: productData.name ?? '',
+          category: productData.category ?? 'General',
           sku: productData.sku ?? '',
           price: productData.price ?? 0,
           quantity: productData.quantity ?? 0,
           reorderLevel: productData.reorderLevel ?? 0,
-        })
-        setProducts(prev => [created, ...prev])
+          },
+        }).unwrap()
       }
     } catch (err) {
       toast({
@@ -110,8 +129,7 @@ export default function InventoryPage() {
   const handleDeleteProduct = async (productId: string) => {
     if (!currentShop) return
     try {
-      await api.products.remove(currentShop.id, productId)
-      setProducts(prev => prev.filter(p => p.id !== productId))
+      await deleteProduct({ shopId: currentShop.id, productId }).unwrap()
       toast({
         title: 'Success',
         description: 'Product deleted',
@@ -132,23 +150,17 @@ export default function InventoryPage() {
           <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
           <p className="text-muted-foreground mt-2">Manage your products and stock levels</p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingProduct(undefined)
-            setModalOpen(true)
-          }}
-          className="gap-2"
-          disabled={!currentShop || isLoading}
-        >
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
       </div>
 
       <InventoryTable
         products={products}
+        onAdd={() => {
+          setEditingProduct(undefined)
+          setModalOpen(true)
+        }}
         onEdit={handleEditProduct}
         onDelete={handleDeleteProduct}
+        disableActions={!currentShop || isLoading || isCreating || isUpdating || isDeleting}
       />
 
       <AddProductModal
@@ -156,6 +168,7 @@ export default function InventoryPage() {
         onOpenChange={setModalOpen}
         onSave={handleAddProduct}
         initialProduct={editingProduct}
+        categories={categoryOptions}
       />
     </div>
   )

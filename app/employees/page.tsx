@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
@@ -12,15 +11,20 @@ import { AddEmployeeModal } from './components/add-employee-modal'
 import { Employee } from '@/lib/types'
 import { Plus, TrendingUp } from 'lucide-react'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
+import {
+  useCreateEmployeeMutation,
+  useDeleteEmployeeMutation,
+  useListEmployeesQuery,
+  useSetEmployeeStatusMutation,
+  useUpdateEmployeeMutation,
+} from '@/redux/api/employees-api'
+import { useGetSettingsQuery } from '@/redux/api/settings-api'
 
 export default function EmployeesPage() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const { currentShop } = useShop()
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>()
 
@@ -30,33 +34,34 @@ export default function EmployeesPage() {
     }
   }, [isAuthenticated, router])
 
+  const { data: employees = [], isFetching: isLoading, error } = useListEmployeesQuery(
+    { shopId: currentShop?.id ?? '' },
+    { skip: !isAuthenticated || !currentShop }
+  )
+
+  const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip: !isAuthenticated || !currentShop })
+  const availableRoles = useMemo(() => {
+    const rolesFromSettings = Object.keys(settings?.rolePermissions ?? {})
+      .filter((r) => r !== 'admin' && r !== 'super_admin')
+      .sort((a, b) => a.localeCompare(b))
+    const rolesFromEmployees = Array.from(new Set(employees.map((e) => String(e.role ?? '')).filter(Boolean)))
+    const roles = Array.from(new Set([...rolesFromSettings, ...rolesFromEmployees])).sort((a, b) => a.localeCompare(b))
+    return roles.length ? roles : ['cashier']
+  }, [employees, settings?.rolePermissions])
+
+  const [createEmployee, { isLoading: isCreating }] = useCreateEmployeeMutation()
+  const [updateEmployee, { isLoading: isUpdating }] = useUpdateEmployeeMutation()
+  const [setEmployeeStatus, { isLoading: isSettingStatus }] = useSetEmployeeStatusMutation()
+  const [deleteEmployee, { isLoading: isDeleting }] = useDeleteEmployeeMutation()
+
   useEffect(() => {
-    let cancelled = false
-
-    const load = async () => {
-      if (!isAuthenticated || !currentShop) return
-      setIsLoading(true)
-      try {
-        const items = await api.employees.list(currentShop.id)
-        if (!cancelled) setEmployees(items)
-      } catch (err) {
-        if (cancelled) return
-        toast({
-          title: 'Error',
-          description: err instanceof Error ? err.message : 'Failed to load employees',
-          variant: 'destructive',
-        })
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, currentShop, toast])
+    if (!error) return
+    toast({
+      title: 'Error',
+      description: 'Failed to load employees',
+      variant: 'destructive',
+    })
+  }, [error, toast])
 
   if (!isAuthenticated) {
     return null
@@ -74,20 +79,27 @@ export default function EmployeesPage() {
 
     try {
       if (editingEmployee) {
-        const updated = await api.employees.update(currentShop.id, editingEmployee.id, {
-          name: employeeData.name ?? editingEmployee.name,
-          email: employeeData.email ?? editingEmployee.email,
-        })
+        await updateEmployee({
+          shopId: currentShop.id,
+          employeeId: editingEmployee.id,
+          input: {
+            name: employeeData.name ?? editingEmployee.name,
+            email: employeeData.email ?? editingEmployee.email,
+            role: String(employeeData.role ?? editingEmployee.role ?? 'cashier'),
+          },
+        }).unwrap()
 
         const requestedStatus = employeeData.status
         const needsStatusChange =
           requestedStatus && requestedStatus !== editingEmployee.status
 
-        const finalEmployee = needsStatusChange
-          ? await api.employees.setStatus(currentShop.id, editingEmployee.id, requestedStatus === 'active')
-          : updated
-
-        setEmployees(prev => prev.map(e => (e.id === finalEmployee.id ? finalEmployee : e)))
+        if (needsStatusChange) {
+          await setEmployeeStatus({
+            shopId: currentShop.id,
+            employeeId: editingEmployee.id,
+            isActive: requestedStatus === 'active',
+          }).unwrap()
+        }
         setEditingEmployee(undefined)
       } else {
         const password = employeeData.password
@@ -100,12 +112,15 @@ export default function EmployeesPage() {
           throw new Error('Missing password')
         }
 
-        const created = await api.employees.create(currentShop.id, {
-          name: employeeData.name ?? '',
-          email: employeeData.email ?? '',
-          password,
-        })
-        setEmployees(prev => [created, ...prev])
+        await createEmployee({
+          shopId: currentShop.id,
+          input: {
+            name: employeeData.name ?? '',
+            email: employeeData.email ?? '',
+            password,
+            role: String(employeeData.role ?? 'cashier'),
+          },
+        }).unwrap()
       }
     } catch (err) {
       if (err instanceof Error && err.message === 'Missing password') return
@@ -126,8 +141,7 @@ export default function EmployeesPage() {
   const handleDeleteEmployee = async (employeeId: string) => {
     if (!currentShop) return
     try {
-      await api.employees.remove(currentShop.id, employeeId)
-      setEmployees(prev => prev.filter(e => e.id !== employeeId))
+      await deleteEmployee({ shopId: currentShop.id, employeeId }).unwrap()
       toast({
         title: 'Success',
         description: 'Employee deleted',
@@ -161,7 +175,7 @@ export default function EmployeesPage() {
               setModalOpen(true)
             }}
             className="gap-2"
-            disabled={!currentShop || isLoading}
+            disabled={!currentShop || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting}
           >
             <Plus className="h-4 w-4" />
             Add Employee
@@ -180,6 +194,7 @@ export default function EmployeesPage() {
         onOpenChange={setModalOpen}
         onSave={handleAddEmployee}
         initialEmployee={editingEmployee}
+        availableRoles={availableRoles}
       />
     </div>
   )

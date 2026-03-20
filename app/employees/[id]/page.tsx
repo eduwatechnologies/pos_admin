@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEmployeeStats } from '@/lib/performance-utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -9,8 +9,9 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
-import { api } from '@/lib/api/client'
 import { Employee, Receipt } from '@/lib/types'
+import { useListEmployeesQuery } from '@/redux/api/employees-api'
+import { useListReceiptsQuery } from '@/redux/api/receipts-api'
 
 export default function EmployeeDetailPage() {
   const params = useParams()
@@ -18,8 +19,7 @@ export default function EmployeeDetailPage() {
   const employeeId = params.id as string
   const { isAuthenticated } = useAuth()
   const { currentShop } = useShop()
-  const [employee, setEmployee] = useState<Employee | null>(null)
-  const [receipts, setReceipts] = useState<Receipt[]>([])
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -27,33 +27,13 @@ export default function EmployeeDetailPage() {
     }
   }, [isAuthenticated, router])
 
-  useEffect(() => {
-    let cancelled = false
+  const skip = !isAuthenticated || !currentShop
+  const { data: employees = [] } = useListEmployeesQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const { data: receipts = [] } = useListReceiptsQuery({ shopId: currentShop?.id ?? '' }, { skip })
 
-    const load = async () => {
-      if (!isAuthenticated || !currentShop) return
-      try {
-        const [employees, receipts] = await Promise.all([
-          api.employees.list(currentShop.id),
-          api.receipts.list(currentShop.id),
-        ])
-        if (cancelled) return
-        setEmployee(employees.find(e => e.id === employeeId) ?? null)
-        setReceipts(receipts)
-      } catch {
-        if (!cancelled) {
-          setEmployee(null)
-          setReceipts([])
-        }
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentShop, employeeId, isAuthenticated])
+  const employee = useMemo<Employee | null>(() => {
+    return employees.find((e) => e.id === employeeId) ?? null
+  }, [employeeId, employees])
 
   const stats = useMemo(() => {
     if (!employee) return { totalSales: 0, transactionCount: 0, averageOrderValue: 0 }
@@ -152,7 +132,7 @@ export default function EmployeeDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Salary</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm">${(employee.salaryOrWage || 0).toLocaleString()}</p>
+            <p className="text-sm">{money.format(employee.salaryOrWage || 0)}</p>
           </CardContent>
         </Card>
       </div>
@@ -164,7 +144,7 @@ export default function EmployeeDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Sales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalSales.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{money.format(stats.totalSales)}</div>
           </CardContent>
         </Card>
 
@@ -182,7 +162,7 @@ export default function EmployeeDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Avg Order Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.averageOrderValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{money.format(stats.averageOrderValue)}</div>
           </CardContent>
         </Card>
       </div>
@@ -200,7 +180,7 @@ export default function EmployeeDetailPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value) => money.format(Number(value) || 0)} />
                 <Legend />
                 <Line type="monotone" dataKey="sales" stroke="#0D9488" name="Sales" />
               </LineChart>
@@ -234,7 +214,7 @@ export default function EmployeeDetailPage() {
                       <td className="py-3 px-4 font-mono text-xs">{receipt.id.slice(0, 8)}</td>
                       <td className="py-3 px-4">{new Date(receipt.date).toLocaleDateString()}</td>
                       <td className="py-3 px-4">{receipt.items.length}</td>
-                      <td className="py-3 px-4 text-right font-semibold">${receipt.total.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-semibold">{money.format(receipt.total)}</td>
                       <td className="py-3 px-4 capitalize text-xs">
                         <span className="bg-muted px-2 py-1 rounded">{receipt.paymentMethod}</span>
                       </td>

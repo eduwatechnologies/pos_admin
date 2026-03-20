@@ -4,7 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/context/auth-context'
 import { ShopProvider } from '@/context/shop-context'
 import { SyncProvider } from '@/context/sync-context'
-import { ReduxProvider } from '@/store/provider'
+import { ReduxProvider } from '@/redux/provider'
 import { LayoutContent } from '@/components/layout-content'
 import './globals.css'
 

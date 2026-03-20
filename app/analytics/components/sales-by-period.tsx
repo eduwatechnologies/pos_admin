@@ -19,6 +19,7 @@ interface SalesByPeriodProps {
 
 export function SalesByPeriod({ data }: SalesByPeriodProps) {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   const chartData = useMemo(() => {
     if (period === 'daily') {
@@ -90,7 +91,7 @@ export function SalesByPeriod({ data }: SalesByPeriodProps) {
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--radius)',
               }}
-              formatter={(value: number) => `$${value.toFixed(2)}`}
+              formatter={(value: any) => money.format(Number(value) || 0)}
             />
             <Line
               type="monotone"
