@@ -87,12 +87,15 @@ export function Sidebar() {
       label: 'Sales',
       items: [
         { href: '/terminal', label: 'Terminal', icon: ShoppingCart, perm: 'terminal' },
-        { href: '/receipts', label: 'Receipts', icon: Receipt, perm: 'receipts' },
+        { href: '/receipts', label: 'Sales', icon: Receipt, perm: 'receipts' },
       ],
     },
     {
       label: 'Insights',
-      items: [{ href: '/analytics', label: 'Analytics', icon: PieChart, perm: 'analytics' }],
+      items: [
+        { href: '/analytics', label: 'Analytics', icon: PieChart, perm: 'analytics' },
+        { href: '/reports', label: 'Reports', icon: BarChart3, perm: 'analytics' },
+      ],
     },
     {
       label: 'Inventory',

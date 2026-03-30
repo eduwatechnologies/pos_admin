@@ -27,6 +27,7 @@ export const baseApi = createApi({
     'Receipt',
     'Settings',
     'Analytics',
+    'Report',
     'Billing',
   ],
   endpoints: () => ({}),

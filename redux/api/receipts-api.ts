@@ -3,11 +3,11 @@ import { mapReceipt, type ApiReceipt } from '@/lib/api/mappers'
 
 export const receiptsApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    listReceipts: build.query<ApiReceipt[], { shopId: string; from?: string; to?: string }>({
-      query: ({ shopId, from, to }) => ({
+    listReceipts: build.query<ApiReceipt[], { shopId: string; from?: string; to?: string; paymentMethod?: string; q?: string }>({
+      query: ({ shopId, from, to, paymentMethod, q }) => ({
         url: `/shops/${shopId}/receipts`,
         method: 'GET',
-        params: { from, to },
+        params: { from, to, paymentMethod, q },
       }),
       transformResponse: (response: any) => {
         const items = Array.isArray(response?.items) ? response.items : []
