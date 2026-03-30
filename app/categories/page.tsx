@@ -25,6 +25,7 @@ import {
   useListCategoriesQuery,
   useUpdateCategoryMutation,
 } from '@/redux/api/categories-api'
+import { useGetSettingsQuery } from '@/redux/api/settings-api'
 
 export default function CategoriesPage() {
   const { isAuthenticated, user } = useAuth()
@@ -44,6 +45,7 @@ export default function CategoriesPage() {
 
   const skip = !isAuthenticated || !currentShop
   const { data: categories = [], error } = useListCategoriesQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip })
 
   const [createCategory] = useCreateCategoryMutation()
   const [updateCategory] = useUpdateCategoryMutation()
@@ -125,7 +127,12 @@ export default function CategoriesPage() {
     }
   }
 
-  const canManage = user?.role === 'admin'
+  const canManage = useMemo(() => {
+    if (!user) return false
+    if (user.role === 'admin' || user.role === 'super_admin') return true
+    const roleKey = String(user.role ?? '')
+    return Boolean((settings?.rolePermissions as any)?.[roleKey]?.inventory)
+  }, [settings?.rolePermissions, user])
 
   return (
     <div className="space-y-8 p-4 md:p-8">
@@ -272,4 +279,3 @@ export default function CategoriesPage() {
     </div>
   )
 }
-

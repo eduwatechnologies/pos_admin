@@ -17,8 +17,12 @@ export const shopsApi = baseApi.injectEndpoints({
             ]
           : [{ type: 'Shop' as const, id: 'LIST' }],
     }),
+    createShop: build.mutation<ApiShop, { name: string; currency?: string; businessName?: string; address?: string; phone?: string }>({
+      query: (body) => ({ url: '/shops', method: 'POST', body }),
+      transformResponse: (response: any) => mapShop(response?.item),
+      invalidatesTags: [{ type: 'Shop', id: 'LIST' }],
+    }),
   }),
 })
 
-export const { useListShopsQuery } = shopsApi
-
+export const { useListShopsQuery, useCreateShopMutation } = shopsApi

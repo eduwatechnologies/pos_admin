@@ -43,6 +43,8 @@ export function LayoutContent({
         ? 'dashboard'
         : pathname.startsWith('/terminal')
           ? 'terminal'
+          : pathname.startsWith('/customers')
+            ? 'customers'
           : pathname.startsWith('/receipts')
             ? 'receipts'
             : pathname.startsWith('/analytics')

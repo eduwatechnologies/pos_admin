@@ -20,9 +20,10 @@ interface EmployeesTableProps {
   employees: Employee[]
   onEdit: (employee: Employee) => void
   onDelete: (employeeId: string) => void | Promise<void>
+  disableActions?: boolean
 }
 
-export function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTableProps) {
+export function EmployeesTable({ employees, onEdit, onDelete, disableActions }: EmployeesTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -173,6 +174,7 @@ export function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTablePr
                           variant="ghost"
                           size="sm"
                           onClick={() => onEdit(employee)}
+                          disabled={disableActions}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -180,6 +182,7 @@ export function EmployeesTable({ employees, onEdit, onDelete }: EmployeesTablePr
                           variant="ghost"
                           size="sm"
                           onClick={() => onDelete(employee.id)}
+                          disabled={disableActions}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

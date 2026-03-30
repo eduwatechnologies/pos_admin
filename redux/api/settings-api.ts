@@ -1,6 +1,6 @@
 import { baseApi } from '@/redux/api/base-api'
 
-type PermissionKey = 'dashboard' | 'terminal' | 'receipts' | 'analytics' | 'inventory' | 'employees' | 'settings'
+type PermissionKey = 'dashboard' | 'terminal' | 'customers' | 'receipts' | 'analytics' | 'inventory' | 'employees' | 'settings'
 
 type RolePermissions = {
   [role: string]: Record<PermissionKey, boolean>
@@ -32,6 +32,7 @@ export const settingsApi = baseApi.injectEndpoints({
             admin: {
               dashboard: true,
               terminal: true,
+              customers: true,
               receipts: true,
               analytics: true,
               inventory: true,
@@ -41,6 +42,7 @@ export const settingsApi = baseApi.injectEndpoints({
             cashier: {
               dashboard: true,
               terminal: true,
+              customers: false,
               receipts: true,
               analytics: false,
               inventory: false,
@@ -86,6 +88,7 @@ export const settingsApi = baseApi.injectEndpoints({
             admin: {
               dashboard: true,
               terminal: true,
+              customers: true,
               receipts: true,
               analytics: true,
               inventory: true,
@@ -95,6 +98,7 @@ export const settingsApi = baseApi.injectEndpoints({
             cashier: {
               dashboard: true,
               terminal: true,
+              customers: false,
               receipts: true,
               analytics: false,
               inventory: false,
@@ -106,7 +110,60 @@ export const settingsApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Settings'],
     }),
+    listRoles: build.query<{ rolePermissions: RolePermissions }, { shopId: string }>({
+      query: ({ shopId }) => ({ url: `/shops/${shopId}/settings/roles`, method: 'GET' }),
+      transformResponse: (response: any) => {
+        const rolePermissions = (response?.rolePermissions ?? {}) as RolePermissions
+        return { rolePermissions }
+      },
+      providesTags: ['Settings'],
+    }),
+    createRole: build.mutation<{ rolePermissions: RolePermissions }, { shopId: string; roleKey: string }>({
+      query: ({ shopId, roleKey }) => ({
+        url: `/shops/${shopId}/settings/roles`,
+        method: 'POST',
+        body: { roleKey },
+      }),
+      transformResponse: (response: any) => {
+        const rolePermissions = (response?.rolePermissions ?? {}) as RolePermissions
+        return { rolePermissions }
+      },
+      invalidatesTags: ['Settings'],
+    }),
+    updateRole: build.mutation<
+      { rolePermissions: RolePermissions },
+      { shopId: string; roleKey: string; input: Partial<{ roleKey: string; permissions: Partial<Record<PermissionKey, boolean>> }> }
+    >({
+      query: ({ shopId, roleKey, input }) => ({
+        url: `/shops/${shopId}/settings/roles/${encodeURIComponent(roleKey)}`,
+        method: 'PATCH',
+        body: input,
+      }),
+      transformResponse: (response: any) => {
+        const rolePermissions = (response?.rolePermissions ?? {}) as RolePermissions
+        return { rolePermissions }
+      },
+      invalidatesTags: ['Settings'],
+    }),
+    deleteRole: build.mutation<{ rolePermissions: RolePermissions }, { shopId: string; roleKey: string }>({
+      query: ({ shopId, roleKey }) => ({
+        url: `/shops/${shopId}/settings/roles/${encodeURIComponent(roleKey)}`,
+        method: 'DELETE',
+      }),
+      transformResponse: (response: any) => {
+        const rolePermissions = (response?.rolePermissions ?? {}) as RolePermissions
+        return { rolePermissions }
+      },
+      invalidatesTags: ['Settings'],
+    }),
   }),
 })
 
-export const { useGetSettingsQuery, useUpdateSettingsMutation } = settingsApi
+export const {
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
+  useListRolesQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+  useDeleteRoleMutation,
+} = settingsApi

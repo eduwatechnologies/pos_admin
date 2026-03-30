@@ -33,6 +33,7 @@ export interface Product {
   sku: string
   barcode?: string
   category: string
+  imageUrl?: string
   price: number
   quantity: number
   reorderLevel: number
@@ -69,6 +70,75 @@ export interface Receipt {
   cashierName?: string
   shopId?: string
   notes?: string
+}
+
+export interface Expense {
+  id: string
+  category: string
+  description?: string
+  amount: number
+  occurredAt: Date
+  supplierId?: string
+  createdByUserId?: string
+  shopId?: string
+}
+
+export interface AuditLog {
+  id: string
+  occurredAt: Date
+  action: string
+  entityType: string
+  entityId?: string
+  userId?: string
+  ip?: string
+  userAgent?: string
+  metadata?: any
+}
+
+export interface Customer {
+  id: string
+  name: string
+  email?: string
+  phone?: string
+  address?: string
+  notes?: string
+  isActive: boolean
+  createdAt: Date
+  shopId?: string
+}
+
+export interface Supplier {
+  id: string
+  name: string
+  email?: string
+  phone?: string
+  address?: string
+  notes?: string
+  isActive: boolean
+  createdAt: Date
+  shopId?: string
+}
+
+export interface PurchaseItem {
+  productId: string
+  productName: string
+  quantity: number
+  unitCost: number
+  subtotal: number
+}
+
+export interface Purchase {
+  id: string
+  purchasedAt: Date
+  status: 'posted' | 'voided' | (string & {})
+  supplierId?: string
+  supplierName?: string
+  reference?: string
+  notes?: string
+  items: PurchaseItem[]
+  totalCost: number
+  createdAt: Date
+  shopId?: string
 }
 
 export interface Employee {

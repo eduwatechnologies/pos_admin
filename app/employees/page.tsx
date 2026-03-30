@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
 import { useRouter } from 'next/navigation'
@@ -15,18 +15,28 @@ import {
   useCreateEmployeeMutation,
   useDeleteEmployeeMutation,
   useListEmployeesQuery,
+  useSetEmployeePasswordMutation,
   useSetEmployeeStatusMutation,
   useUpdateEmployeeMutation,
 } from '@/redux/api/employees-api'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
 
 export default function EmployeesPage() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const { currentShop } = useShop()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>()
+
+  const toErrorMessage = useCallback((err: any) => {
+    const dataError = err?.data?.error ?? err?.data?.message
+    if (dataError) return String(dataError)
+    if (err?.error) return String(err.error)
+    if (typeof err?.status === 'number') return `Request failed (${err.status})`
+    if (err instanceof Error) return err.message
+    return 'Something went wrong'
+  }, [])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -49,8 +59,16 @@ export default function EmployeesPage() {
     return roles.length ? roles : ['cashier']
   }, [employees, settings?.rolePermissions])
 
+  const canManageEmployees = useMemo(() => {
+    if (!user) return false
+    if (user.role === 'admin' || user.role === 'super_admin') return true
+    const roleKey = String(user.role ?? '')
+    return Boolean((settings?.rolePermissions as any)?.[roleKey]?.employees)
+  }, [settings?.rolePermissions, user])
+
   const [createEmployee, { isLoading: isCreating }] = useCreateEmployeeMutation()
   const [updateEmployee, { isLoading: isUpdating }] = useUpdateEmployeeMutation()
+  const [setEmployeePassword] = useSetEmployeePasswordMutation()
   const [setEmployeeStatus, { isLoading: isSettingStatus }] = useSetEmployeeStatusMutation()
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteEmployeeMutation()
 
@@ -58,16 +76,24 @@ export default function EmployeesPage() {
     if (!error) return
     toast({
       title: 'Error',
-      description: 'Failed to load employees',
+      description: toErrorMessage(error),
       variant: 'destructive',
     })
-  }, [error, toast])
+  }, [error, toast, toErrorMessage])
 
   if (!isAuthenticated) {
     return null
   }
 
   const handleAddEmployee = async (employeeData: Partial<Employee> & { password?: string }) => {
+    if (!canManageEmployees) {
+      toast({
+        title: 'Access denied',
+        description: 'You do not have permission to manage employees',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!currentShop) {
       toast({
         title: 'Error',
@@ -86,8 +112,18 @@ export default function EmployeesPage() {
             name: employeeData.name ?? editingEmployee.name,
             email: employeeData.email ?? editingEmployee.email,
             role: String(employeeData.role ?? editingEmployee.role ?? 'cashier'),
+            salaryOrWage: employeeData.salaryOrWage ?? editingEmployee.salaryOrWage ?? 0,
           },
         }).unwrap()
+
+        const nextPassword = String(employeeData.password ?? '').trim()
+        if (nextPassword) {
+          await setEmployeePassword({
+            shopId: currentShop.id,
+            employeeId: editingEmployee.id,
+            password: nextPassword,
+          }).unwrap()
+        }
 
         const requestedStatus = employeeData.status
         const needsStatusChange =
@@ -119,6 +155,7 @@ export default function EmployeesPage() {
             email: employeeData.email ?? '',
             password,
             role: String(employeeData.role ?? 'cashier'),
+            salaryOrWage: employeeData.salaryOrWage ?? 0,
           },
         }).unwrap()
       }
@@ -126,7 +163,7 @@ export default function EmployeesPage() {
       if (err instanceof Error && err.message === 'Missing password') return
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save employee',
+        description: toErrorMessage(err),
         variant: 'destructive',
       })
       throw err
@@ -134,11 +171,27 @@ export default function EmployeesPage() {
   }
 
   const handleEditEmployee = (employee: Employee) => {
+    if (!canManageEmployees) {
+      toast({
+        title: 'Access denied',
+        description: 'You do not have permission to manage employees',
+        variant: 'destructive',
+      })
+      return
+    }
     setEditingEmployee(employee)
     setModalOpen(true)
   }
 
   const handleDeleteEmployee = async (employeeId: string) => {
+    if (!canManageEmployees) {
+      toast({
+        title: 'Access denied',
+        description: 'You do not have permission to manage employees',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!currentShop) return
     try {
       await deleteEmployee({ shopId: currentShop.id, employeeId }).unwrap()
@@ -149,7 +202,7 @@ export default function EmployeesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to delete employee',
+        description: toErrorMessage(err),
         variant: 'destructive',
       })
     }
@@ -175,10 +228,10 @@ export default function EmployeesPage() {
               setModalOpen(true)
             }}
             className="gap-2"
-            disabled={!currentShop || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting}
+            disabled={!canManageEmployees || !currentShop || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting}
           >
             <Plus className="h-4 w-4" />
-            Add Employee
+            {isLoading ? 'Loading…' : 'Add Employee'}
           </Button>
         </div>
       </div>
@@ -187,6 +240,7 @@ export default function EmployeesPage() {
         employees={employees}
         onEdit={handleEditEmployee}
         onDelete={handleDeleteEmployee}
+        disableActions={!canManageEmployees || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting}
       />
 
       <AddEmployeeModal
@@ -195,6 +249,8 @@ export default function EmployeesPage() {
         onSave={handleAddEmployee}
         initialEmployee={editingEmployee}
         availableRoles={availableRoles}
+        isSaving={isCreating || isUpdating}
+        canManage={canManageEmployees}
       />
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEmployeeStats } from '@/lib/performance-utils'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -10,16 +10,23 @@ import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { Employee, Receipt } from '@/lib/types'
-import { useListEmployeesQuery } from '@/redux/api/employees-api'
+import { useToast } from '@/hooks/use-toast'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useListEmployeesQuery, useSetEmployeePasswordMutation } from '@/redux/api/employees-api'
 import { useListReceiptsQuery } from '@/redux/api/receipts-api'
+import { useGetSettingsQuery } from '@/redux/api/settings-api'
 
 export default function EmployeeDetailPage() {
   const params = useParams()
   const router = useRouter()
   const employeeId = params.id as string
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const { currentShop } = useShop()
+  const { toast } = useToast()
   const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
+  const [newPassword, setNewPassword] = useState('')
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -30,10 +37,19 @@ export default function EmployeeDetailPage() {
   const skip = !isAuthenticated || !currentShop
   const { data: employees = [] } = useListEmployeesQuery({ shopId: currentShop?.id ?? '' }, { skip })
   const { data: receipts = [] } = useListReceiptsQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const [setEmployeePassword] = useSetEmployeePasswordMutation()
 
   const employee = useMemo<Employee | null>(() => {
     return employees.find((e) => e.id === employeeId) ?? null
   }, [employeeId, employees])
+
+  const canManageEmployees = useMemo(() => {
+    if (!user) return false
+    if (user.role === 'admin' || user.role === 'super_admin') return true
+    const roleKey = String(user.role ?? '')
+    return Boolean((settings?.rolePermissions as any)?.[roleKey]?.employees)
+  }, [settings?.rolePermissions, user])
 
   const stats = useMemo(() => {
     if (!employee) return { totalSales: 0, transactionCount: 0, averageOrderValue: 0 }
@@ -136,6 +152,57 @@ export default function EmployeeDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Reset Password</CardTitle>
+          <CardDescription>Set a new password for this employee</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Input
+              type="password"
+              placeholder="New password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={!canManageEmployees || isResettingPassword}
+            />
+            <Button
+              type="button"
+              disabled={!canManageEmployees || isResettingPassword || !newPassword.trim() || !currentShop}
+              onClick={async () => {
+                if (!currentShop) return
+                if (!canManageEmployees) {
+                  toast({
+                    title: 'Access denied',
+                    description: 'You do not have permission to manage employees',
+                    variant: 'destructive',
+                  })
+                  return
+                }
+                const trimmed = newPassword.trim()
+                if (!trimmed) return
+                try {
+                  setIsResettingPassword(true)
+                  await setEmployeePassword({ shopId: currentShop.id, employeeId: employee.id, password: trimmed }).unwrap()
+                  setNewPassword('')
+                  toast({ title: 'Success', description: 'Password updated' })
+                } catch (err) {
+                  toast({
+                    title: 'Error',
+                    description: err instanceof Error ? err.message : 'Failed to update password',
+                    variant: 'destructive',
+                  })
+                } finally {
+                  setIsResettingPassword(false)
+                }
+              }}
+            >
+              {isResettingPassword ? 'Updating…' : 'Update Password'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Performance Stats */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

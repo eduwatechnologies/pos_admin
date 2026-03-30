@@ -6,6 +6,7 @@ import {
   Banknote,
   Camera,
   Check,
+  ChevronsUpDown,
   CreditCard,
   Minus,
   Plus,
@@ -21,6 +22,7 @@ import {
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { Button } from '@/components/ui/button'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import PrintableReceipt from '@/components/printable-reciept'
 import { useToast } from '@/hooks/use-toast'
@@ -39,6 +42,7 @@ import type { ApiReceipt } from '@/lib/api/mappers'
 import { useListCategoriesQuery } from '@/redux/api/categories-api'
 import { useListProductsQuery } from '@/redux/api/products-api'
 import { useCreateReceiptMutation } from '@/redux/api/receipts-api'
+import { useCreateCustomerMutation, useListCustomersQuery } from '@/redux/api/customers-api'
 
 type CartLine = {
   productId: string
@@ -63,6 +67,8 @@ export default function TerminalPage() {
   const { isAuthenticated, user } = useAuth()
   const { currentShop } = useShop()
 
+  const walkInName = 'Walk-in'
+
   const searchRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -70,7 +76,9 @@ export default function TerminalPage() {
 
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
-  const [customerName, setCustomerName] = useState('')
+  const [customerName, setCustomerName] = useState(walkInName)
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
+  const [customerQuery, setCustomerQuery] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'digital'>('cash')
   const [cart, setCart] = useState<Record<string, CartLine>>({})
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('idle')
@@ -78,6 +86,11 @@ export default function TerminalPage() {
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [lastReceipt, setLastReceipt] = useState<ApiReceipt | null>(null)
   const [showReceipt, setShowReceipt] = useState(false)
+
+  useEffect(() => {
+    if (customerName.trim()) return
+    setCustomerName(walkInName)
+  }, [customerName, walkInName])
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/auth/login')
@@ -89,8 +102,10 @@ export default function TerminalPage() {
     { skip },
   )
   const { data: categoryItems = [] } = useListCategoriesQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const { data: customers = [] } = useListCustomersQuery({ shopId: currentShop?.id ?? '' }, { skip })
 
   const [createReceipt, { isLoading: isCheckingOut }] = useCreateReceiptMutation()
+  const [createCustomer, { isLoading: isCreatingCustomer }] = useCreateCustomerMutation()
 
   const categories = useMemo(() => {
     const set = new Set<string>()
@@ -129,6 +144,18 @@ export default function TerminalPage() {
   }, [cart])
 
   const canCheckout = !!currentShop && totals.count > 0 && !isCheckingOut && checkoutStep !== 'processing'
+
+  const customersByNameLower = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const c of customers) {
+      const n = String((c as any)?.name ?? '').trim()
+      if (!n) continue
+      map.set(n.toLowerCase(), n)
+    }
+    return map
+  }, [customers])
+
+  const customerNames = useMemo(() => Array.from(customersByNameLower.values()).sort((a, b) => a.localeCompare(b)), [customersByNameLower])
 
   const addByCode = useCallback(
     (rawCode: string) => {
@@ -255,6 +282,9 @@ export default function TerminalPage() {
     const w = window.open('', '_blank', 'width=420,height=700')
     if (!w) return
 
+    const cashierName = user?.name ? String(user.name) : receipt.cashierName ? String(receipt.cashierName) : ''
+    const customerLabel = receipt.customerName ? String(receipt.customerName) : walkInName
+
     const lines = receipt.items
       .map(
         (i) => `
@@ -285,6 +315,8 @@ export default function TerminalPage() {
               <div style="font-weight:800; font-size:18px;">Receipt</div>
               <div style="color:#555; font-size:12px;">${new Date(receipt.date).toLocaleString()}</div>
               <div style="color:#555; font-size:12px;">${receipt.id}</div>
+              <div style="color:#555; font-size:12px;">Customer: ${customerLabel}</div>
+              ${cashierName ? `<div style="color:#555; font-size:12px;">Cashier: ${cashierName}</div>` : ''}
             </div>
             <table style="width:100%; border-collapse:collapse; font-size:14px;">
               <tbody>
@@ -319,7 +351,7 @@ export default function TerminalPage() {
     w.document.open()
     w.document.write(html)
     w.document.close()
-  }, [])
+  }, [user?.name, walkInName])
 
   const addToCart = (product: (typeof products)[number]) => {
     setCart((prev) => {
@@ -371,6 +403,7 @@ export default function TerminalPage() {
     setLastReceipt(null)
     setReceiptOpen(false)
     setShowReceipt(false)
+    setCustomerName(walkInName)
   }
 
   const beginCheckout = () => {
@@ -382,6 +415,9 @@ export default function TerminalPage() {
     if (!currentShop) return
     setPaymentMethod(method)
     setCheckoutStep('processing')
+
+    const trimmedCustomerName = customerName.trim()
+    const finalCustomerName = trimmedCustomerName ? trimmedCustomerName : walkInName
 
     const taxCents = Math.round(totals.taxAmount * 100)
     const items = Object.values(cart).map((l) => ({
@@ -396,7 +432,7 @@ export default function TerminalPage() {
         shopId: currentShop.id,
         input: {
           items,
-          customerName: customerName.trim() ? customerName.trim() : undefined,
+          customerName: finalCustomerName,
           paymentMethod: method,
           taxCents,
         },
@@ -405,7 +441,7 @@ export default function TerminalPage() {
       setLastReceipt(receipt)
       setReceiptOpen(false)
       setCheckoutStep('complete')
-      setCustomerName('')
+      setCustomerName(walkInName)
       setCart({})
 
       toast({
@@ -657,15 +693,110 @@ export default function TerminalPage() {
               {checkoutStep === 'idle' ? (
                 <div className="grid gap-1.5">
                   <Label htmlFor="customerName" className="text-xs text-muted-foreground">
-                    Customer (optional)
+                    Customer
                   </Label>
-                  <Input
-                    id="customerName"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Customer name"
-                    className="h-9"
-                  />
+                  <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="customerName"
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerPickerOpen}
+                        className="h-9 w-full justify-between px-3"
+                      >
+                        <span className="truncate">{customerName.trim() ? customerName : walkInName}</span>
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search customers..."
+                          value={customerQuery}
+                          onValueChange={setCustomerQuery}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No customer found.</CommandEmpty>
+                          <CommandGroup heading="Customers">
+                            <CommandItem
+                              value={walkInName}
+                              onSelect={() => {
+                                setCustomerName(walkInName)
+                                setCustomerQuery('')
+                                setCustomerPickerOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'size-4',
+                                  customerName.trim().toLowerCase() === walkInName.toLowerCase() ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              {walkInName}
+                            </CommandItem>
+                            {customerNames.map((n) => (
+                              <CommandItem
+                                key={n}
+                                value={n}
+                                onSelect={() => {
+                                  setCustomerName(n)
+                                  setCustomerQuery('')
+                                  setCustomerPickerOpen(false)
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'size-4',
+                                    customerName.trim().toLowerCase() === n.toLowerCase() ? 'opacity-100' : 'opacity-0',
+                                  )}
+                                />
+                                {n}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                          {(() => {
+                            const q = customerQuery.trim()
+                            if (!q) return null
+                            const lower = q.toLowerCase()
+                            if (lower === walkInName.toLowerCase()) return null
+                            if (customersByNameLower.has(lower)) return null
+                            return (
+                              <CommandGroup heading="Actions">
+                                <CommandItem
+                                  value={`__create__${q}`}
+                                  disabled={!currentShop || isCreatingCustomer}
+                                  onSelect={async () => {
+                                    if (!currentShop) return
+                                    try {
+                                      const created = await createCustomer({ shopId: currentShop.id, input: { name: q } }).unwrap()
+                                      const createdName = String((created as any)?.name ?? q).trim() || q
+                                      setCustomerName(createdName)
+                                      setCustomerQuery('')
+                                      setCustomerPickerOpen(false)
+                                      toast({ title: 'Customer created', description: createdName })
+                                    } catch (err: any) {
+                                      toast({
+                                        title: 'Error',
+                                        description:
+                                          err?.data?.error ??
+                                          err?.data?.message ??
+                                          (err instanceof Error ? err.message : 'Failed to create customer'),
+                                        variant: 'destructive',
+                                      })
+                                    }
+                                  }}
+                                >
+                                  <Plus className="size-4" />
+                                  Create “{q}”
+                                </CommandItem>
+                              </CommandGroup>
+                            )
+                          })()}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               ) : null}
 
@@ -828,6 +959,8 @@ export default function TerminalPage() {
           tax={lastReceipt.tax}
           total={lastReceipt.total}
           paymentMethod={String(lastReceipt.paymentMethod ?? paymentMethod)}
+          customerName={lastReceipt.customerName ? String(lastReceipt.customerName) : walkInName}
+          cashierName={user?.name ? String(user.name) : undefined}
           currency="NGN"
           storeName={currentShop?.name ?? undefined}
           storeLines={[

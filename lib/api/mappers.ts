@@ -22,6 +22,7 @@ export type ApiProduct = {
   sku: string
   barcode?: string
   category: string
+  imageUrl?: string
   price: number
   quantity: number
   reorderLevel: number
@@ -109,6 +110,7 @@ export function mapProduct(p: any): ApiProduct {
     sku: p?.sku ? String(p.sku) : '',
     barcode: p?.barcode ? String(p.barcode) : undefined,
     category,
+    imageUrl: p?.imageUrl ? String(p.imageUrl) : undefined,
     price: Number(p?.priceCents ?? 0) / 100,
     quantity: Number(p?.stockQty ?? 0),
     reorderLevel: Number(p?.lowStockThreshold ?? 0),
@@ -127,6 +129,8 @@ export function mapCategory(c: any): ApiCategory {
 }
 
 export function mapEmployee(u: any, shopId?: string): ApiEmployee {
+  const salaryOrWageRaw = u?.salaryOrWage
+  const salaryOrWageNumber = salaryOrWageRaw == null ? undefined : Number(salaryOrWageRaw)
   return {
     id: String(u?._id ?? u?.id ?? ''),
     name: String(u?.name ?? ''),
@@ -135,7 +139,7 @@ export function mapEmployee(u: any, shopId?: string): ApiEmployee {
     role: String(u?.role ?? 'cashier'),
     status: u?.isActive === false ? 'inactive' : 'active',
     joinDate: toIsoDate(u?.createdAt),
-    salaryOrWage: undefined,
+    salaryOrWage: Number.isFinite(salaryOrWageNumber) ? salaryOrWageNumber : undefined,
     shopId,
   }
 }

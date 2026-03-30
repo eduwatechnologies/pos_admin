@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Product } from '@/lib/types'
@@ -119,7 +120,12 @@ export function InventoryTable({ products, onAdd, onEdit, onDelete, disableActio
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
                           <Package className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <span className="text-sm font-medium text-card-foreground">{product.name}</span>
+                        <Link
+                          href={`/inventory/${product.id}`}
+                          className="text-sm font-medium text-card-foreground hover:underline"
+                        >
+                          {product.name}
+                        </Link>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-sm font-mono text-muted-foreground">{product.sku}</td>

@@ -1,5 +1,5 @@
 import { baseApi } from '@/redux/api/base-api'
-import { mapEmployee, toIsoDate, type ApiEmployee } from '@/lib/api/mappers'
+import { mapEmployee, type ApiEmployee } from '@/lib/api/mappers'
 
 export const employeesApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -17,25 +17,18 @@ export const employeesApi = baseApi.injectEndpoints({
             ]
           : [{ type: 'Employee' as const, id: 'LIST' }],
     }),
-    createEmployee: build.mutation<ApiEmployee, { shopId: string; input: { name: string; email: string; password: string; role: string } }>({
+    createEmployee: build.mutation<
+      ApiEmployee,
+      { shopId: string; input: { name: string; email: string; password: string; role: string; salaryOrWage?: number } }
+    >({
       query: ({ shopId, input }) => ({ url: `/shops/${shopId}/employees`, method: 'POST', body: input }),
-      transformResponse: (response: any, _meta, arg) => {
-        const item = response?.item
-        return {
-          id: String(item?.id ?? item?._id ?? ''),
-          name: String(item?.name ?? ''),
-          email: String(item?.email ?? ''),
-          phone: item?.phone ? String(item.phone) : undefined,
-          role: String(item?.role ?? 'cashier'),
-          status: item?.isActive === false ? 'inactive' : 'active',
-          joinDate: toIsoDate(item?.createdAt),
-          salaryOrWage: undefined,
-          shopId: arg.shopId,
-        }
-      },
+      transformResponse: (response: any, _meta, arg) => mapEmployee(response?.item, arg.shopId),
       invalidatesTags: [{ type: 'Employee', id: 'LIST' }],
     }),
-    updateEmployee: build.mutation<ApiEmployee, { shopId: string; employeeId: string; input: Partial<{ name: string; email: string; role: string }> }>({
+    updateEmployee: build.mutation<
+      ApiEmployee,
+      { shopId: string; employeeId: string; input: Partial<{ name: string; email: string; role: string; salaryOrWage: number }> }
+    >({
       query: ({ shopId, employeeId, input }) => ({
         url: `/shops/${shopId}/employees/${employeeId}`,
         method: 'PATCH',
@@ -52,6 +45,14 @@ export const employeesApi = baseApi.injectEndpoints({
       }),
       transformResponse: (response: any, _meta, arg) => mapEmployee(response?.item, arg.shopId),
       invalidatesTags: (_result, _err, arg) => [{ type: 'Employee', id: arg.employeeId }],
+    }),
+    setEmployeePassword: build.mutation<{ ok: boolean }, { shopId: string; employeeId: string; password: string }>({
+      query: ({ shopId, employeeId, password }) => ({
+        url: `/shops/${shopId}/employees/${employeeId}/password`,
+        method: 'PATCH',
+        body: { password },
+      }),
+      transformResponse: (response: any) => ({ ok: Boolean(response?.ok) }),
     }),
     deleteEmployee: build.mutation<void, { shopId: string; employeeId: string }>({
       query: ({ shopId, employeeId }) => ({
@@ -71,5 +72,6 @@ export const {
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
   useSetEmployeeStatusMutation,
+  useSetEmployeePasswordMutation,
   useDeleteEmployeeMutation,
 } = employeesApi

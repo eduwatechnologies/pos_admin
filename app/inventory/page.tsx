@@ -9,6 +9,7 @@ import { AddProductModal } from './components/add-product-modal'
 import { Product } from '@/lib/types'
 import { useShop } from '@/context/shop-context'
 import { useListCategoriesQuery } from '@/redux/api/categories-api'
+import { useGetSettingsQuery } from '@/redux/api/settings-api'
 import {
   useCreateProductMutation,
   useDeleteProductMutation,
@@ -17,7 +18,7 @@ import {
 } from '@/redux/api/products-api'
 
 export default function InventoryPage() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const { currentShop } = useShop()
@@ -39,6 +40,8 @@ export default function InventoryPage() {
     { shopId: currentShop?.id ?? '' },
     { skip: !isAuthenticated || !currentShop }
   )
+
+  const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip: !isAuthenticated || !currentShop })
 
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation()
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation()
@@ -66,6 +69,13 @@ export default function InventoryPage() {
     return null
   }
 
+  const canManageInventory = useMemo(() => {
+    if (!user) return false
+    if (user.role === 'admin' || user.role === 'super_admin') return true
+    const roleKey = String(user.role ?? '')
+    return Boolean((settings?.rolePermissions as any)?.[roleKey]?.inventory)
+  }, [settings?.rolePermissions, user])
+
   const categoryOptions = useMemo(() => {
     const set = new Set<string>(['General'])
     categories.forEach((c) => set.add(c.name))
@@ -74,6 +84,14 @@ export default function InventoryPage() {
   }, [categories, editingProduct?.category])
 
   const handleAddProduct = async (productData: Partial<Product>) => {
+    if (!canManageInventory) {
+      toast({
+        title: 'Access denied',
+        description: 'You do not have permission to manage inventory',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!currentShop) {
       toast({
         title: 'Error',
@@ -92,6 +110,7 @@ export default function InventoryPage() {
           name: productData.name ?? editingProduct.name,
           category: productData.category ?? editingProduct.category,
           sku: productData.sku ?? editingProduct.sku,
+          imageUrl: productData.imageUrl ?? editingProduct.imageUrl,
           price: productData.price ?? editingProduct.price,
           quantity: productData.quantity ?? editingProduct.quantity,
           reorderLevel: productData.reorderLevel ?? editingProduct.reorderLevel,
@@ -105,6 +124,7 @@ export default function InventoryPage() {
           name: productData.name ?? '',
           category: productData.category ?? 'General',
           sku: productData.sku ?? '',
+          imageUrl: productData.imageUrl ?? '',
           price: productData.price ?? 0,
           quantity: productData.quantity ?? 0,
           reorderLevel: productData.reorderLevel ?? 0,
@@ -122,11 +142,27 @@ export default function InventoryPage() {
   }
 
   const handleEditProduct = (product: Product) => {
+    if (!canManageInventory) {
+      toast({
+        title: 'Access denied',
+        description: 'You do not have permission to manage inventory',
+        variant: 'destructive',
+      })
+      return
+    }
     setEditingProduct(product)
     setModalOpen(true)
   }
 
   const handleDeleteProduct = async (productId: string) => {
+    if (!canManageInventory) {
+      toast({
+        title: 'Access denied',
+        description: 'You do not have permission to manage inventory',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!currentShop) return
     try {
       await deleteProduct({ shopId: currentShop.id, productId }).unwrap()
@@ -154,13 +190,17 @@ export default function InventoryPage() {
 
       <InventoryTable
         products={products}
-        onAdd={() => {
-          setEditingProduct(undefined)
-          setModalOpen(true)
-        }}
+        onAdd={
+          canManageInventory
+            ? () => {
+                setEditingProduct(undefined)
+                setModalOpen(true)
+              }
+            : undefined
+        }
         onEdit={handleEditProduct}
         onDelete={handleDeleteProduct}
-        disableActions={!currentShop || isLoading || isCreating || isUpdating || isDeleting}
+        disableActions={!canManageInventory || !currentShop || isLoading || isCreating || isUpdating || isDeleting}
       />
 
       <AddProductModal

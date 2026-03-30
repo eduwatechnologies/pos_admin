@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Product } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
+import { UploadButton } from '@uploadthing/react'
+import type { OurFileRouter } from '@/app/api/uploadthing/core'
 
 interface AddProductModalProps {
   open: boolean
@@ -36,6 +38,7 @@ export function AddProductModal({
       name: '',
       category: 'General',
       sku: '',
+      imageUrl: '',
       price: 0,
       quantity: 0,
       reorderLevel: 0,
@@ -61,6 +64,7 @@ export function AddProductModal({
         name: '',
         category: 'General',
         sku: '',
+        imageUrl: '',
         price: 0,
         quantity: 0,
         reorderLevel: 0,
@@ -165,6 +169,44 @@ export function AddProductModal({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="imageUrl" className="text-sm font-medium">
+              Image URL
+            </label>
+            <Input
+              id="imageUrl"
+              type="url"
+              value={formData.imageUrl || ''}
+              onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+              placeholder="https://cdn.example.com/image.jpg"
+            />
+            <div>
+              <UploadButton<OurFileRouter>
+                endpoint="productImage"
+                onClientUploadComplete={(res) => {
+                  const url = res?.[0]?.url ?? ''
+                  if (url) {
+                    setFormData((prev) => ({ ...prev, imageUrl: url }))
+                    toast({ title: 'Image uploaded', description: 'Preview updated' })
+                  }
+                }}
+                onUploadError={(error: Error) => {
+                  toast({ title: 'Upload failed', description: error.message, variant: 'destructive' })
+                }}
+              />
+            </div>
+            {formData.imageUrl ? (
+              <div className="rounded-lg border border-border p-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={formData.imageUrl}
+                  alt="Preview"
+                  className="max-h-32 object-contain mx-auto"
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

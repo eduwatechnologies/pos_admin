@@ -6,15 +6,23 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  Cog,
   Folder,
+  History,
   LogOut,
   Menu,
   Package,
   PieChart,
   Receipt,
+  Shield,
+  SlidersHorizontal,
   ShoppingCart,
   Store,
+  Truck,
+  CircleDollarSign,
+  ClipboardList,
   Settings,
+  User,
   Users,
   X,
 } from 'lucide-react'
@@ -32,6 +40,7 @@ export function Sidebar() {
   const { currentShop } = useShop()
   const [isOpen, setIsOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const { data: settings } = useGetSettingsQuery(
     { shopId: currentShop?.id ?? '' },
@@ -58,6 +67,10 @@ export function Sidebar() {
     }
   }, [collapsed, user])
 
+  useEffect(() => {
+    if (pathname.startsWith('/settings')) setSettingsOpen(true)
+  }, [pathname])
+
   if (!user) return null
 
   const handleLogout = () => {
@@ -65,19 +78,47 @@ export function Sidebar() {
     router.push('/auth/login')
   }
 
-  const commonNavItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    { href: '/terminal', label: 'Terminal', icon: ShoppingCart },
-    { href: '/receipts', label: 'Receipts', icon: Receipt },
-    { href: '/analytics', label: 'Analytics', icon: PieChart },
-  ]
-
-  const adminNavItems = [
-    { href: '/inventory', label: 'Inventory', icon: Package },
-    { href: '/categories', label: 'Categories', icon: Folder },
-    { href: '/employees', label: 'Employees', icon: Users },
-    { href: '/settings', label: 'Settings', icon: Settings },
-  ]
+  const groups = [
+    {
+      label: 'Main',
+      items: [{ href: '/dashboard', label: 'Dashboard', icon: BarChart3, perm: 'dashboard' }],
+    },
+    {
+      label: 'Sales',
+      items: [
+        { href: '/terminal', label: 'Terminal', icon: ShoppingCart, perm: 'terminal' },
+        { href: '/receipts', label: 'Receipts', icon: Receipt, perm: 'receipts' },
+      ],
+    },
+    {
+      label: 'Insights',
+      items: [{ href: '/analytics', label: 'Analytics', icon: PieChart, perm: 'analytics' }],
+    },
+    {
+      label: 'Inventory',
+      items: [
+        { href: '/inventory', label: 'Inventory', icon: Package, perm: 'inventory' },
+        { href: '/categories', label: 'Categories', icon: Folder, perm: 'inventory' },
+        { href: '/purchases', label: 'Purchases', icon: ClipboardList, perm: 'inventory' },
+        { href: '/suppliers', label: 'Suppliers', icon: Truck, perm: 'inventory' },
+      ],
+    },
+    {
+      label: 'Finance',
+      items: [{ href: '/expenses', label: 'Expenses', icon: CircleDollarSign, perm: 'analytics' }],
+    },
+    {
+      label: 'People',
+      items: [
+        { href: '/customers', label: 'Customers', icon: User, perm: 'customers' },
+        { href: '/employees', label: 'Employees', icon: Users, perm: 'employees' },
+      ],
+    },
+    {
+      label: 'Admin',
+      items: [{ href: '/audit', label: 'Audit Log', icon: History, perm: 'settings' }],
+    },
+  ] as const
 
   const isActive = (href: string) => {
     return pathname.startsWith(href)
@@ -105,7 +146,7 @@ export function Sidebar() {
       <aside
         className={cn(
           'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 md:translate-x-0',
-          collapsed ? 'w-[68px]' : 'w-[240px]',
+          collapsed ? 'w-[68px]' : 'w-[220px]',
           isOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -133,72 +174,20 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
-          <span
-            className={cn(
-              'mb-2 block px-3 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
-              collapsed && 'sr-only',
-            )}
-          >
-            Main
-          </span>
-          {commonNavItems.map((item) => {
-            const key =
-              item.href === '/dashboard'
-                ? 'dashboard'
-                : item.href === '/terminal'
-                  ? 'terminal'
-                  : item.href === '/receipts'
-                    ? 'receipts'
-                    : item.href === '/analytics'
-                      ? 'analytics'
-                      : ''
-            if (key && !canUse(key)) return null
-            const Icon = item.icon
-            const active = isActive(item.href)
+          {groups.map((group) => {
+            const visible = group.items.filter((item) => (item.perm ? canUse(item.perm) : true))
+            if (visible.length === 0) return null
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
-                  active
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                )}
-              >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
-                {!collapsed ? <span className="truncate">{item.label}</span> : null}
-              </Link>
-            )
-          })}
-
-          {(() => {
-            const visibleManage = adminNavItems.filter((item) => {
-              if (item.href === '/settings') return user.role === 'admin' || user.role === 'super_admin'
-              const key =
-                item.href === '/inventory' || item.href === '/categories'
-                  ? 'inventory'
-                  : item.href === '/employees'
-                    ? 'employees'
-                    : ''
-              return key ? canUse(key) : true
-            })
-
-            if (visibleManage.length === 0) return null
-
-            return (
-              <>
-                <div className="pt-4" />
+              <div key={group.label} className="space-y-1">
                 <span
                   className={cn(
-                    'mb-2 block px-3 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
+                    'mb-2 block px-3 pt-4 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
                     collapsed && 'sr-only',
                   )}
                 >
-                  Manage
+                  {group.label}
                 </span>
-                {visibleManage.map((item) => {
+                {visible.map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
                   return (
@@ -218,7 +207,107 @@ export function Sidebar() {
                     </Link>
                   )
                 })}
-              </>
+              </div>
+            )
+          })}
+
+          {(() => {
+            const canManageStores = user.role === 'admin' || user.role === 'super_admin'
+            const showSettings = canUse('settings')
+            if (!showSettings && !canManageStores) return null
+
+            return (
+              <div className="space-y-1">
+                <span
+                  className={cn(
+                    'mb-2 block px-3 pt-4 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
+                    collapsed && 'sr-only',
+                  )}
+                >
+                  Settings
+                </span>
+
+                {canManageStores ? (
+                  <Link
+                    href="/stores"
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                      isActive('/stores')
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                    )}
+                  >
+                    <Store className="h-[18px] w-[18px] shrink-0" />
+                    {!collapsed ? <span className="truncate">Stores</span> : null}
+                  </Link>
+                ) : null}
+
+                {showSettings ? (
+                  collapsed ? (
+                    <Link
+                      href="/settings/general"
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                        pathname.startsWith('/settings')
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                      )}
+                      aria-label="Settings"
+                    >
+                      <Settings className="h-[18px] w-[18px] shrink-0" />
+                      {!collapsed ? <span className="truncate">Settings</span> : null}
+                    </Link>
+                  ) : (
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => setSettingsOpen((v) => !v)}
+                        className={cn(
+                          'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                          pathname.startsWith('/settings')
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                        )}
+                      >
+                        <Settings className="h-[18px] w-[18px] shrink-0" />
+                        <span className="truncate flex-1 text-left">Settings</span>
+                        <ChevronRight className={cn('h-4 w-4 transition-transform', settingsOpen && 'rotate-90')} />
+                      </button>
+
+                      {settingsOpen ? (
+                        <div className="pl-10 space-y-1">
+                          {[
+                            { href: '/settings/general', label: 'General', icon: SlidersHorizontal },
+                            { href: '/settings/permissions', label: 'Roles', icon: Shield },
+                            { href: '/settings/system', label: 'System', icon: Cog },
+                          ].map((sub) => {
+                            const active = isActive(sub.href)
+                            const SubIcon = sub.icon
+                            return (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                onClick={() => setIsOpen(false)}
+                                className={cn(
+                                  'flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
+                                  active
+                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                )}
+                              >
+                                <SubIcon className="h-4 w-4 shrink-0" />
+                                {sub.label}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                ) : null}
+              </div>
             )
           })()}
         </nav>

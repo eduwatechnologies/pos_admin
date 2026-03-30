@@ -13,6 +13,8 @@ interface PrintableReceiptProps {
   tax: number;
   total: number;
   paymentMethod: string;
+  cashierName?: string;
+  customerName?: string;
   currency?: string;
   storeName?: string;
   storeLines?: string[];
@@ -27,6 +29,8 @@ const PrintableReceipt = ({
   tax,
   total,
   paymentMethod,
+  cashierName,
+  customerName,
   currency = "NGN",
   storeName = "My Store",
   storeLines,
@@ -145,6 +149,8 @@ const PrintableReceipt = ({
                 <span>{timeStr}</span>
               </div>
               <div>ID: {txId}</div>
+              {customerName ? <div>Customer: {customerName}</div> : null}
+              {cashierName ? <div>Cashier: {cashierName}</div> : null}
               <div>Payment: {methodLabel}</div>
             </div>
 

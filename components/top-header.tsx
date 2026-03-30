@@ -1,14 +1,15 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import React from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Bell, ChevronDown, LogOut } from 'lucide-react'
 
 import { useAuth } from '@/context/auth-context'
 import { ShopSwitcherInline } from '@/components/shop-switcher-inline'
+import { useShop } from '@/context/shop-context'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { useGetBillingSubscriptionQuery } from '@/redux/api/billing-api'
 
 function getTitleFromPath(pathname: string) {
   if (pathname.startsWith('/employees/performance')) return 'Employee Performance'
@@ -24,6 +34,7 @@ function getTitleFromPath(pathname: string) {
   if (pathname.startsWith('/terminal')) return 'POS Terminal'
   if (pathname.startsWith('/receipts')) return 'Receipts'
   if (pathname.startsWith('/analytics')) return 'Analytics'
+  if (pathname.startsWith('/stores')) return 'Stores'
   if (pathname.startsWith('/settings')) return 'Settings'
   if (pathname.startsWith('/dashboard')) return 'Dashboard'
   return 'POS Dashboard'
@@ -40,11 +51,40 @@ export function TopHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { currentShop } = useShop()
+  const [billingOpen, setBillingOpen] = useState(false)
 
-  if (!user) return null
+  const isAuthed = Boolean(user)
+  const skipBilling = !isAuthed || !currentShop
+  const { data: subscription } = useGetBillingSubscriptionQuery({ shopId: currentShop?.id ?? '' }, { skip: skipBilling })
 
   const title = getTitleFromPath(pathname)
   const unreadCount = 2
+
+  const billingStatus = subscription?.status ?? 'none'
+  const badgeVariant = billingStatus === 'active' ? 'secondary' : billingStatus === 'none' ? 'destructive' : 'destructive'
+  const badgeLabel =
+    billingStatus === 'active' ? 'Subscribed' : billingStatus === 'past_due' ? 'Past due' : billingStatus === 'canceled' ? 'Canceled' : 'Subscribe'
+
+  const canPrompt = useMemo(() => {
+    if (!isAuthed) return false
+    if (!currentShop) return false
+    if (pathname.startsWith('/settings/system')) return false
+    if (billingStatus === 'active') return false
+    return true
+  }, [billingStatus, currentShop, isAuthed, pathname])
+
+  useEffect(() => {
+    if (!canPrompt) return
+    if (typeof window === 'undefined') return
+    const key = `subscription_prompt_${currentShop?.id ?? ''}`
+    const already = sessionStorage.getItem(key)
+    if (already) return
+    sessionStorage.setItem(key, '1')
+    setBillingOpen(true)
+  }, [canPrompt, currentShop?.id])
+
+  if (!user) return null
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
@@ -56,6 +96,15 @@ export function TopHeader() {
 
         <div className="flex items-center gap-2">
           <ShopSwitcherInline />
+          {currentShop ? (
+            <button
+              type="button"
+              onClick={() => setBillingOpen(true)}
+              className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Badge variant={badgeVariant as any}>{badgeLabel}</Badge>
+            </button>
+          ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
@@ -123,6 +172,33 @@ export function TopHeader() {
           </DropdownMenu>
         </div>
       </div>
+
+      <Dialog open={billingOpen} onOpenChange={setBillingOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Subscription</DialogTitle>
+            <DialogDescription>
+              {billingStatus === 'active'
+                ? 'This store subscription is active.'
+                : 'This store needs an active subscription to continue. Go to System Settings to pay with Paystack.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setBillingOpen(false)}>
+              Close
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setBillingOpen(false)
+                router.push('/settings/system')
+              }}
+            >
+              Go to Billing
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   )
 }

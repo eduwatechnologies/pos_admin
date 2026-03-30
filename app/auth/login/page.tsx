@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
 import { Button } from '@/components/ui/button'
@@ -66,111 +67,86 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/40 p-6 sm:p-10">
-      <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center sm:min-h-[calc(100vh-5rem)]">
-        <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            <div className="relative hidden border-r bg-muted/30 lg:flex">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent" />
-              <div className="relative flex w-full flex-col p-10">
-                <div className="flex items-center gap-3 text-lg font-semibold">
-                  <span className="inline-flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                    <StoreIcon className="size-5" />
-                  </span>
-                  BillScan POS
-                </div>
-                <div className="my-auto max-w-md space-y-2">
-                  <div className="text-3xl font-semibold tracking-tight">Manage sales, stock, and teams.</div>
-                  <div className="text-sm text-muted-foreground">
-                    Sign in to access your dashboard, inventory, employees, receipts, and analytics.
-                  </div>
-                </div>
-              </div>
-            </div>
+    <Card className="border-0 shadow-none">
+      <CardHeader className="space-y-2 text-center sm:text-left">
+        <div className="flex items-center justify-center gap-2 sm:justify-start md:hidden">
+          <span className="inline-flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <StoreIcon className="size-5" />
+          </span>
+          <div className="text-lg font-semibold">BillScan POS</div>
+        </div>
+        <CardTitle>Welcome back</CardTitle>
+        <CardDescription>Sign in to continue to your dashboard.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <div className="flex items-center justify-center p-6 sm:p-10">
-              <Card className="w-full max-w-md border-0 shadow-none">
-                <CardHeader className="space-y-2 text-center sm:text-left">
-                  <div className="flex items-center justify-center gap-2 sm:justify-start md:hidden">
-                    <span className="inline-flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                      <StoreIcon className="size-5" />
-                    </span>
-                    <div className="text-lg font-semibold">BillScan POS</div>
-                  </div>
-                  <CardTitle>Welcome back</CardTitle>
-                  <CardDescription>Sign in to continue to your dashboard.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="admin@pos.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="admin@pos.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        autoComplete="email"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          autoComplete="current-password"
-                          className="pr-10"
-                          required
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          className="absolute right-1 top-1/2 -translate-y-1/2"
-                          onClick={() => setShowPassword((v) => !v)}
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="rememberEmail"
-                          checked={rememberEmail}
-                          onCheckedChange={(v) => setRememberEmail(v === true)}
-                        />
-                        <Label htmlFor="rememberEmail" className="text-muted-foreground">
-                          Remember email
-                        </Label>
-                      </div>
-                    </div>
-
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Signing in…' : 'Sign in'}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                className="pr-10"
+                required
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </Button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="rememberEmail"
+                checked={rememberEmail}
+                onCheckedChange={(v) => setRememberEmail(v === true)}
+              />
+              <Label htmlFor="rememberEmail" className="text-muted-foreground">
+                Remember email
+              </Label>
+            </div>
+            <Link href="/auth/register" className="text-sm text-primary underline-offset-4 hover:underline">
+              Create account
+            </Link>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Signing in…' : 'Sign in'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

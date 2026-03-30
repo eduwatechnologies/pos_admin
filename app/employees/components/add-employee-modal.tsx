@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Employee } from '@/lib/types'
 import { useToast } from '@/hooks/use-toast'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
 
 type EmployeeFormData = Partial<Employee> & { password?: string }
 
@@ -21,6 +22,8 @@ interface AddEmployeeModalProps {
   onSave: (employee: EmployeeFormData) => void | Promise<void>
   initialEmployee?: Employee
   availableRoles: string[]
+  isSaving?: boolean
+  canManage?: boolean
 }
 
 export function AddEmployeeModal({
@@ -29,8 +32,15 @@ export function AddEmployeeModal({
   onSave,
   initialEmployee,
   availableRoles,
+  isSaving,
+  canManage,
 }: AddEmployeeModalProps) {
   const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const isBusy = Boolean(isSaving) || isSubmitting
+  const isDisabled = isBusy || !canManage
+  const [showPassword, setShowPassword] = useState(false)
+
   const [formData, setFormData] = useState<EmployeeFormData>({
     name: '',
     email: '',
@@ -62,9 +72,27 @@ export function AddEmployeeModal({
     }
   }, [availableRoles, initialEmployee, open])
 
+  useEffect(() => {
+    if (!open) setIsSubmitting(false)
+  }, [open])
+
+  const submitLabel = useMemo(() => {
+    if (isBusy) return initialEmployee ? 'Saving…' : 'Creating…'
+    return initialEmployee ? 'Update Employee' : 'Add Employee'
+  }, [initialEmployee, isBusy])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (isBusy) return
+    if (!canManage) {
+      toast({
+        title: 'Access denied',
+        description: 'You do not have permission to manage employees',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!formData.name || !formData.email || !formData.role) {
       toast({
         title: 'Error',
@@ -84,8 +112,10 @@ export function AddEmployeeModal({
     }
 
     try {
+      setIsSubmitting(true)
       await onSave(formData)
     } catch {
+      setIsSubmitting(false)
       return
     }
 
@@ -98,7 +128,13 @@ export function AddEmployeeModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (isBusy && !nextOpen) return
+        onOpenChange(nextOpen)
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{initialEmployee ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
@@ -117,6 +153,7 @@ export function AddEmployeeModal({
               value={formData.name || ''}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., John Doe"
+              disabled={isDisabled}
               required
             />
           </div>
@@ -131,6 +168,7 @@ export function AddEmployeeModal({
               value={formData.email || ''}
               onChange={e => setFormData({ ...formData, email: e.target.value })}
               placeholder="john@example.com"
+              disabled={isDisabled}
               required
             />
           </div>
@@ -145,24 +183,38 @@ export function AddEmployeeModal({
               value={formData.phone || ''}
               onChange={e => setFormData({ ...formData, phone: e.target.value })}
               placeholder="555-0000"
+              disabled={isDisabled}
             />
           </div>
 
-          {!initialEmployee && (
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password *
-              </label>
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">
+              {initialEmployee ? 'New Password (optional)' : 'Password *'}
+            </label>
+            <div className="relative">
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={formData.password || ''}
                 onChange={e => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Create a password"
-                required
+                placeholder={initialEmployee ? 'Leave blank to keep current password' : 'Create a password'}
+                disabled={isDisabled}
+                className="pr-10"
+                required={!initialEmployee}
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                disabled={isDisabled}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </Button>
             </div>
-          )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -174,6 +226,7 @@ export function AddEmployeeModal({
                 value={formData.role || 'cashier'}
                 onChange={e => setFormData({ ...formData, role: e.target.value as any })}
                 className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background"
+                disabled={isDisabled}
                 required
               >
                 {availableRoles.map((r) => (
@@ -193,6 +246,7 @@ export function AddEmployeeModal({
                 value={formData.status || 'active'}
                 onChange={e => setFormData({ ...formData, status: e.target.value as any })}
                 className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background"
+                disabled={isDisabled}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -212,15 +266,16 @@ export function AddEmployeeModal({
               value={formData.salaryOrWage || 0}
               onChange={e => setFormData({ ...formData, salaryOrWage: parseFloat(e.target.value) })}
               placeholder="0.00"
+              disabled={isDisabled}
             />
           </div>
 
           <div className="flex gap-3 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isBusy}>
               Cancel
             </Button>
-            <Button type="submit">
-              {initialEmployee ? 'Update' : 'Add'} Employee
+            <Button type="submit" disabled={isDisabled}>
+              {submitLabel}
             </Button>
           </div>
         </form>

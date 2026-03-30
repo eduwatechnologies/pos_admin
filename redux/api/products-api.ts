@@ -1,6 +1,28 @@
 import { baseApi } from '@/redux/api/base-api'
 import { mapProduct, type ApiProduct } from '@/lib/api/mappers'
 
+type ProductPurchaseLine = {
+  id: string
+  purchasedAt: Date
+  status: string
+  supplierId?: string
+  reference?: string
+  qty: number
+  unitCost: number
+  lineTotal: number
+}
+
+type ProductDetailResponse = {
+  product: ApiProduct
+  purchases: ProductPurchaseLine[]
+  suppliers: { id: string; name: string }[]
+}
+
+function toDate(input: any) {
+  const d = input ? new Date(input) : null
+  return d && !Number.isNaN(d.getTime()) ? d : new Date(0)
+}
+
 export const productsApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     listProducts: build.query<ApiProduct[], { shopId: string }>({
@@ -21,7 +43,7 @@ export const productsApi = baseApi.injectEndpoints({
       ApiProduct,
       {
         shopId: string
-        input: { name: string; category?: string; sku?: string; price: number; quantity: number; reorderLevel: number }
+        input: { name: string; category?: string; sku?: string; imageUrl?: string; price: number; quantity: number; reorderLevel: number }
       }
     >({
       query: ({ shopId, input }) => ({
@@ -31,6 +53,7 @@ export const productsApi = baseApi.injectEndpoints({
           name: input.name,
           category: input.category ? input.category : null,
           sku: input.sku ? input.sku : null,
+          imageUrl: input.imageUrl ? input.imageUrl : null,
           priceCents: Math.round(Number(input.price ?? 0) * 100),
           stockQty: Number(input.quantity ?? 0),
           lowStockThreshold: Number(input.reorderLevel ?? 0),
@@ -44,7 +67,7 @@ export const productsApi = baseApi.injectEndpoints({
       {
         shopId: string
         productId: string
-        input: Partial<{ name: string; category: string; sku: string; price: number; quantity: number; reorderLevel: number }>
+        input: Partial<{ name: string; category: string; sku: string; imageUrl: string; price: number; quantity: number; reorderLevel: number }>
       }
     >({
       query: ({ shopId, productId, input }) => {
@@ -52,6 +75,7 @@ export const productsApi = baseApi.injectEndpoints({
         if ('name' in input) payload.name = input.name
         if ('category' in input) payload.category = input.category ? input.category : null
         if ('sku' in input) payload.sku = input.sku ? input.sku : null
+        if ('imageUrl' in input) payload.imageUrl = input.imageUrl ? input.imageUrl : null
         if ('price' in input) payload.priceCents = Math.round(Number(input.price ?? 0) * 100)
         if ('quantity' in input) payload.stockQty = Number(input.quantity ?? 0)
         if ('reorderLevel' in input) payload.lowStockThreshold = Number(input.reorderLevel ?? 0)
@@ -77,6 +101,35 @@ export const productsApi = baseApi.injectEndpoints({
         { type: 'Product', id: 'LIST' },
       ],
     }),
+    getProductDetail: build.query<ProductDetailResponse, { shopId: string; productId: string }>({
+      query: ({ shopId, productId }) => ({ url: `/shops/${shopId}/products/${productId}/detail`, method: 'GET' }),
+      transformResponse: (response: any) => {
+        const suppliersRaw = Array.isArray(response?.suppliers) ? response.suppliers : []
+        const suppliers = suppliersRaw.map((s: any) => ({
+          id: String(s?._id ?? s?.id ?? ''),
+          name: String(s?.name ?? ''),
+        }))
+
+        const purchasesRaw = Array.isArray(response?.purchases) ? response.purchases : []
+        const purchases = purchasesRaw.map((p: any) => ({
+          id: String(p?._id ?? p?.id ?? ''),
+          purchasedAt: toDate(p?.purchasedAt),
+          status: String(p?.status ?? ''),
+          supplierId: p?.supplierId ? String(p.supplierId) : undefined,
+          reference: p?.reference ? String(p.reference) : undefined,
+          qty: Number(p?.qty ?? 0),
+          unitCost: Number(p?.unitCostCents ?? 0) / 100,
+          lineTotal: Number(p?.lineTotalCents ?? 0) / 100,
+        }))
+
+        return {
+          product: mapProduct(response?.item),
+          purchases,
+          suppliers,
+        }
+      },
+      providesTags: (_result, _err, arg) => [{ type: 'Product', id: arg.productId }],
+    }),
   }),
 })
 
@@ -85,4 +138,5 @@ export const {
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
+  useGetProductDetailQuery,
 } = productsApi
