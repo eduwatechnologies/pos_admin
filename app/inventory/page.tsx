@@ -65,10 +65,6 @@ export default function InventoryPage() {
     })
   }, [categoriesError, toast])
 
-  if (!isAuthenticated) {
-    return null
-  }
-
   const canManageInventory = useMemo(() => {
     if (!user) return false
     if (user.role === 'admin' || user.role === 'super_admin') return true
@@ -82,6 +78,10 @@ export default function InventoryPage() {
     if (editingProduct?.category) set.add(editingProduct.category)
     return Array.from(set)
   }, [categories, editingProduct?.category])
+
+  if (!isAuthenticated) {
+    return null
+  }
 
   const handleAddProduct = async (productData: Partial<Product>) => {
     if (!canManageInventory) {
