@@ -9,6 +9,7 @@ import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import type { Expense, Supplier } from '@/lib/types'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -46,6 +47,7 @@ export default function ExpensesPage() {
   const [supplierQuery, setSupplierQuery] = useState('')
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteCandidate, setDeleteCandidate] = useState<Expense | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/auth/login')
@@ -58,7 +60,7 @@ export default function ExpensesPage() {
 
   const [createExpense] = useCreateExpenseMutation()
   const [updateExpense] = useUpdateExpenseMutation()
-  const [deleteExpense] = useDeleteExpenseMutation()
+  const [deleteExpense, { isLoading: isDeleting }] = useDeleteExpenseMutation()
 
   useEffect(() => {
     if (!error) return
@@ -175,15 +177,22 @@ export default function ExpensesPage() {
     }
   }
 
-  const handleDelete = async (e: Expense) => {
+  const handleDelete = (e: Expense) => {
     if (!canManageAnalytics) {
       toast({ title: 'Access denied', description: 'You do not have permission to manage expenses', variant: 'destructive' })
       return
     }
     if (!currentShop) return
+    setDeleteCandidate(e)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return
+    if (!currentShop) return
     try {
-      await deleteExpense({ shopId: currentShop.id, expenseId: e.id }).unwrap()
+      await deleteExpense({ shopId: currentShop.id, expenseId: deleteCandidate.id }).unwrap()
       toast({ title: 'Deleted', description: 'Expense deleted' })
+      setDeleteCandidate(null)
     } catch (err) {
       toast({
         title: 'Error',
@@ -377,7 +386,15 @@ export default function ExpensesPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => setDeleteCandidate(open ? deleteCandidate : null)}
+        title="Delete expense?"
+        description="This will permanently delete this expense record."
+        confirmText="Delete expense"
+        loading={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }
-

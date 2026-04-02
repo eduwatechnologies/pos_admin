@@ -8,6 +8,7 @@ import { Product } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { AlertCircle, Edit2, Filter, Package, Search, Trash2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 
 interface InventoryTableProps {
   products: Product[]
@@ -26,6 +27,8 @@ const statusStyles: Record<string, { label: string; className: string }> = {
 export function InventoryTable({ products, onAdd, onEdit, onDelete, disableActions }: InventoryTableProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLowStock, setFilterLowStock] = useState(false)
+  const [deleteCandidate, setDeleteCandidate] = useState<Product | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   const filteredProducts = useMemo(() => {
@@ -42,6 +45,17 @@ export function InventoryTable({ products, onAdd, onEdit, onDelete, disableActio
   const lowStockProducts = useMemo(() => {
     return products.filter((p) => p.quantity <= p.reorderLevel)
   }, [products])
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return
+    setIsDeleting(true)
+    try {
+      await onDelete(deleteCandidate.id)
+      setDeleteCandidate(null)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -156,7 +170,7 @@ export function InventoryTable({ products, onAdd, onEdit, onDelete, disableActio
                           variant="ghost"
                           size="icon-sm"
                           className="rounded-md hover:bg-secondary"
-                          onClick={() => onDelete(product.id)}
+                          onClick={() => setDeleteCandidate(product)}
                           disabled={disableActions}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -170,6 +184,21 @@ export function InventoryTable({ products, onAdd, onEdit, onDelete, disableActio
           </table>
         </div>
       </div>
+      <ConfirmDeleteDialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => setDeleteCandidate(open ? deleteCandidate : null)}
+        title="Delete product?"
+        description={
+          deleteCandidate ? (
+            <span>
+              This will permanently delete <span className="font-medium">{deleteCandidate.name}</span>.
+            </span>
+          ) : null
+        }
+        confirmText="Delete product"
+        loading={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

@@ -8,7 +8,8 @@ import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-import type { Product, Supplier } from '@/lib/types'
+import type { Product, Purchase, Supplier } from '@/lib/types'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,6 +41,12 @@ export default function PurchasesPage() {
   const { currentShop } = useShop()
 
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'posted' | 'voided'>('all')
+  const [filterSupplierQuery, setFilterSupplierQuery] = useState('')
+  const [filterSupplierId, setFilterSupplierId] = useState<string | null>(null)
+  const [detailPurchase, setDetailPurchase] = useState<Purchase | null>(null)
+
   const [modalOpen, setModalOpen] = useState(false)
 
   const [supplierQuery, setSupplierQuery] = useState('')
@@ -51,13 +58,27 @@ export default function PurchasesPage() {
   const [purchasedAt, setPurchasedAt] = useState(nowLocalInputString())
   const [lines, setLines] = useState<DraftLine[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [voidCandidate, setVoidCandidate] = useState<Purchase | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/auth/login')
   }, [isAuthenticated, router])
 
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchTerm.trim()), 250)
+    return () => window.clearTimeout(t)
+  }, [searchTerm])
+
   const skip = !isAuthenticated || !currentShop
-  const { data: purchases = [], error: purchasesError } = useListPurchasesQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const { data: purchases = [], error: purchasesError } = useListPurchasesQuery(
+    {
+      shopId: currentShop?.id ?? '',
+      supplierId: filterSupplierId ?? undefined,
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      q: debouncedSearch || undefined,
+    },
+    { skip },
+  )
   const { data: suppliers = [], error: suppliersError } = useListSuppliersQuery(
     { shopId: currentShop?.id ?? '' },
     { skip },
@@ -66,7 +87,7 @@ export default function PurchasesPage() {
   const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip })
 
   const [createPurchase] = useCreatePurchaseMutation()
-  const [voidPurchase] = useVoidPurchaseMutation()
+  const [voidPurchase, { isLoading: isVoiding }] = useVoidPurchaseMutation()
 
   useEffect(() => {
     if (!purchasesError) return
@@ -103,15 +124,16 @@ export default function PurchasesPage() {
     return suppliers.find((s) => s.id === selectedSupplierId) ?? null
   }, [selectedSupplierId, suppliers])
 
-  const filteredPurchases = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase()
-    if (!q) return purchases
-    return purchases.filter((p) => {
-      const supplierName = p.supplierId ? supplierNameById.get(p.supplierId) ?? '' : ''
-      const hay = [supplierName, p.reference ?? '', p.notes ?? '', p.status ?? ''].join(' ').toLowerCase()
-      return hay.includes(q)
-    })
-  }, [purchases, searchTerm, supplierNameById])
+  const selectedFilterSupplier = useMemo(() => {
+    if (!filterSupplierId) return null
+    return suppliers.find((s) => s.id === filterSupplierId) ?? null
+  }, [filterSupplierId, suppliers])
+
+  const filteredFilterSuppliers = useMemo(() => {
+    const q = filterSupplierQuery.trim().toLowerCase()
+    if (!q) return suppliers.slice(0, 12)
+    return suppliers.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 12)
+  }, [filterSupplierQuery, suppliers])
 
   const filteredSuppliers = useMemo(() => {
     const q = supplierQuery.trim().toLowerCase()
@@ -121,13 +143,13 @@ export default function PurchasesPage() {
 
   const filteredProducts = useMemo(() => {
     const q = productQuery.trim().toLowerCase()
-    if (!q) return products.slice(0, 12)
+    if (!q) return products.slice(0, 30)
     return products
       .filter((p) => {
-        const hay = [p.name, p.sku ?? ''].join(' ').toLowerCase()
+        const hay = [p.name, p.sku ?? '', p.barcode ?? ''].join(' ').toLowerCase()
         return hay.includes(q)
       })
-      .slice(0, 12)
+      .slice(0, 30)
   }, [productQuery, products])
 
   const totalCost = useMemo(() => {
@@ -229,7 +251,7 @@ export default function PurchasesPage() {
     }
   }
 
-  const handleVoid = async (purchaseId: string) => {
+  const handleVoid = (p: Purchase) => {
     if (!canManageInventory) {
       toast({
         title: 'Access denied',
@@ -239,9 +261,16 @@ export default function PurchasesPage() {
       return
     }
     if (!currentShop) return
+    setVoidCandidate(p)
+  }
+
+  const confirmVoid = async () => {
+    if (!voidCandidate) return
+    if (!currentShop) return
     try {
-      await voidPurchase({ shopId: currentShop.id, purchaseId }).unwrap()
+      await voidPurchase({ shopId: currentShop.id, purchaseId: voidCandidate.id }).unwrap()
       toast({ title: 'Voided', description: 'Purchase voided' })
+      setVoidCandidate(null)
     } catch (err) {
       toast({
         title: 'Error',
@@ -268,14 +297,79 @@ export default function PurchasesPage() {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search purchases..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 w-[300px] rounded-lg pl-9"
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search purchases..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 w-[300px] rounded-lg pl-9"
+              />
+            </div>
+
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+              {(['all', 'posted', 'voided'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setStatusFilter(v)}
+                  className={cn(
+                    'h-8 rounded-md px-3 text-xs font-semibold transition-colors',
+                    statusFilter === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                >
+                  {v === 'all' ? 'All' : v === 'posted' ? 'Posted' : 'Voided'}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <Input
+                value={filterSupplierQuery}
+                onChange={(e) => setFilterSupplierQuery(e.target.value)}
+                placeholder={selectedFilterSupplier ? selectedFilterSupplier.name : 'Filter by supplier (optional)'}
+                className="h-9 w-[260px] rounded-lg"
+              />
+              {selectedFilterSupplier ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterSupplierId(null)
+                    setFilterSupplierQuery('')
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 hover:bg-muted"
+                  aria-label="Clear supplier filter"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              ) : null}
+
+              {!selectedFilterSupplier && filterSupplierQuery.trim() ? (
+                <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+                  <div className="max-h-48 overflow-auto">
+                    {filteredFilterSuppliers.length === 0 ? (
+                      <div className="p-3 text-sm text-muted-foreground">No suppliers</div>
+                    ) : (
+                      filteredFilterSuppliers.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
+                          onClick={() => {
+                            setFilterSupplierId(s.id)
+                            setFilterSupplierQuery('')
+                          }}
+                        >
+                          <span className="font-medium">{s.name}</span>
+                          <span className="text-xs text-muted-foreground">{s.phone ?? ''}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -293,18 +387,22 @@ export default function PurchasesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredPurchases.length === 0 ? (
+                {purchases.length === 0 ? (
                   <tr>
                     <td className="px-5 py-4 text-sm text-muted-foreground" colSpan={6}>
                       No purchases found
                     </td>
                   </tr>
                 ) : (
-                  filteredPurchases.map((p) => {
+                  purchases.map((p) => {
                     const supplierName = p.supplierId ? supplierNameById.get(p.supplierId) ?? 'Unknown' : '-'
                     const isVoided = p.status === 'voided'
                     return (
-                      <tr key={p.id} className="transition-colors hover:bg-muted/50">
+                      <tr
+                        key={p.id}
+                        className="cursor-pointer transition-colors hover:bg-muted/50"
+                        onClick={() => setDetailPurchase(p)}
+                      >
                         <td className="px-5 py-3.5 text-sm text-card-foreground">{p.purchasedAt.toLocaleString()}</td>
                         <td className="px-5 py-3.5 text-sm text-muted-foreground">{supplierName}</td>
                         <td className="px-5 py-3.5 text-sm text-muted-foreground">{p.reference ?? '-'}</td>
@@ -328,7 +426,10 @@ export default function PurchasesPage() {
                               variant="ghost"
                               size="sm"
                               className="h-8 text-destructive hover:text-destructive"
-                              onClick={() => handleVoid(p.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleVoid(p)
+                              }}
                               disabled={!canManageInventory || isVoided}
                             >
                               Void
@@ -433,6 +534,14 @@ export default function PurchasesPage() {
                     value={productQuery}
                     onChange={(e) => setProductQuery(e.target.value)}
                     placeholder="Search products to add..."
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return
+                      e.preventDefault()
+                      const first = filteredProducts[0]
+                      if (!first) return
+                      addProductLine(first)
+                      setProductQuery('')
+                    }}
                   />
                   <div className="max-h-56 overflow-auto rounded-lg border border-border">
                     {filteredProducts.length === 0 ? (
@@ -513,6 +622,110 @@ export default function PurchasesPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+      <ConfirmDeleteDialog
+        open={!!voidCandidate}
+        onOpenChange={(open) => setVoidCandidate(open ? voidCandidate : null)}
+        title="Void purchase?"
+        description="This will reverse the stock and mark this purchase as voided."
+        confirmText="Void purchase"
+        loading={isVoiding}
+        onConfirm={confirmVoid}
+      />
+
+      <Dialog open={!!detailPurchase} onOpenChange={(open) => setDetailPurchase(open ? detailPurchase : null)}>
+        <DialogContent className="sm:max-w-[720px] max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Purchase Details</DialogTitle>
+            <DialogDescription>Review items and totals.</DialogDescription>
+          </DialogHeader>
+
+          {detailPurchase ? (
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <div className="text-xs text-muted-foreground">Purchased At</div>
+                  <div className="text-sm font-semibold text-card-foreground">{detailPurchase.purchasedAt.toLocaleString()}</div>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="mt-1">
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                        detailPurchase.status === 'voided'
+                          ? 'bg-muted text-muted-foreground'
+                          : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+                      )}
+                    >
+                      {detailPurchase.status}
+                    </span>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3 sm:col-span-2">
+                  <div className="text-xs text-muted-foreground">Supplier</div>
+                  <div className="text-sm font-semibold text-card-foreground">
+                    {detailPurchase.supplierId ? supplierNameById.get(detailPurchase.supplierId) ?? 'Unknown' : '-'}
+                  </div>
+                  {detailPurchase.reference ? (
+                    <div className="mt-1 text-xs text-muted-foreground">Ref: {detailPurchase.reference}</div>
+                  ) : null}
+                  {detailPurchase.notes ? (
+                    <div className="mt-1 text-xs text-muted-foreground">{detailPurchase.notes}</div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Item</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Qty</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Unit</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {detailPurchase.items.length === 0 ? (
+                        <tr>
+                          <td className="px-4 py-3 text-sm text-muted-foreground" colSpan={4}>
+                            No items
+                          </td>
+                        </tr>
+                      ) : (
+                        detailPurchase.items.map((i, idx) => (
+                          <tr key={`${i.productId}-${idx}`} className="hover:bg-muted/50">
+                            <td className="px-4 py-3 text-sm text-card-foreground">
+                              <div className="font-medium">{i.productName}</div>
+                              <div className="text-[11px] text-muted-foreground">{i.productId}</div>
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm font-semibold text-card-foreground tabular-nums">{i.quantity}</td>
+                            <td className="px-4 py-3 text-right text-sm text-muted-foreground tabular-nums">{money.format(i.unitCost)}</td>
+                            <td className="px-4 py-3 text-right text-sm font-semibold text-card-foreground tabular-nums">
+                              {money.format(i.subtotal)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-border">
+                        <td className="px-4 py-3 text-sm font-semibold text-card-foreground" colSpan={3}>
+                          Total
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-bold text-card-foreground tabular-nums">
+                          {money.format(detailPurchase.totalCost)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   Banknote,
   Camera,
@@ -49,6 +50,7 @@ type CartLine = {
   name: string
   sku: string
   barcode?: string
+  imageUrl?: string
   unitPrice: number
   availableQty: number
   qty: number
@@ -367,6 +369,7 @@ export default function TerminalPage() {
           name: product.name,
           sku: product.sku ?? '',
           barcode: product.barcode,
+          imageUrl: product.imageUrl,
           unitPrice: Number(product.price ?? 0),
           availableQty,
           qty: nextQty,
@@ -533,17 +536,47 @@ export default function TerminalPage() {
                     onClick={() => addToCart(product)}
                     disabled={!currentShop || outOfStock}
                     type="button"
-                    className="bg-card border border-border rounded-xl p-4 text-left hover:border-primary/40 hover:shadow-md transition-all group disabled:opacity-50"
+                    className="bg-card border border-border rounded-xl p-3 text-left hover:border-primary/40 hover:shadow-md transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-grey-300 flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-                      <ShoppingBag className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <div className="relative mb-2 aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+                      {product.imageUrl ? (
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          fill
+                          sizes="(max-width: 768px) 45vw, (max-width: 1280px) 30vw, 18vw"
+                          className="object-contain p-2"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <ShoppingBag className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                      )}
+
+                      {outOfStock ? (
+                        <div className="absolute left-2 top-2 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">
+                          Out of stock
+                        </div>
+                      ) : null}
                     </div>
-                    <p className="text-sm font-medium text-card-foreground leading-tight mb-1 truncate">{product.name}</p>
-                    <p className="text-[11px] font-mono text-muted-foreground mb-2">
-                      {product.sku ? product.sku : 'No SKU'}
-                      {inCart > 0 ? ` • In cart: ${inCart}` : ''}
-                    </p>
-                    <p className="text-base font-bold text-primary">{formatMoney(product.price)}</p>
+
+                    <p className="text-sm font-semibold text-card-foreground leading-snug">{product.name}</p>
+
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-[11px] font-mono text-muted-foreground">
+                        {product.sku ? product.sku : 'No SKU'}
+                      </span>
+                      {inCart > 0 ? (
+                        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          In cart {inCart}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-2 flex items-end justify-between gap-2">
+                      <p className="text-base font-bold text-primary tabular-nums">{formatMoney(product.price)}</p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">{Number(product.quantity ?? 0)} left</p>
+                    </div>
                   </button>
                 )
               })
@@ -583,6 +616,13 @@ export default function TerminalPage() {
                     key={item.productId}
                     className="flex items-center gap-3 py-2.5 border-b border-border last:border-0"
                   >
+                    <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+                      {item.imageUrl ? (
+                        <Image src={item.imageUrl} alt={item.name} width={36} height={36} className="w-full h-full object-cover" />
+                      ) : (
+                        <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-card-foreground truncate">{item.name}</p>
                       <p className="text-xs text-muted-foreground">{formatMoney(item.unitPrice)} each</p>

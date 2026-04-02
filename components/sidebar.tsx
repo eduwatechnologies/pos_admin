@@ -176,7 +176,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
           {groups.map((group) => {
             const visible = group.items.filter((item) => (item.perm ? canUse(item.perm) : true))
             if (visible.length === 0) return null
@@ -184,7 +184,7 @@ export function Sidebar() {
               <div key={group.label} className="space-y-1">
                 <span
                   className={cn(
-                    'mb-2 block px-3 pt-4 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
+                    'mb-1.5 block px-3 pt-3 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
                     collapsed && 'sr-only',
                   )}
                 >
@@ -199,7 +199,7 @@ export function Sidebar() {
                       href={item.href}
                       onClick={() => setIsOpen(false)}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                         active
                           ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                           : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -223,7 +223,7 @@ export function Sidebar() {
               <div className="space-y-1">
                 <span
                   className={cn(
-                    'mb-2 block px-3 pt-4 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
+                    'mb-1.5 block px-3 pt-3 text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60',
                     collapsed && 'sr-only',
                   )}
                 >
@@ -235,7 +235,7 @@ export function Sidebar() {
                     href="/stores"
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                       isActive('/stores')
                         ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                         : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -252,7 +252,7 @@ export function Sidebar() {
                       href="/settings/general"
                       onClick={() => setIsOpen(false)}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                         pathname.startsWith('/settings')
                           ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                           : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -268,7 +268,7 @@ export function Sidebar() {
                         type="button"
                         onClick={() => setSettingsOpen((v) => !v)}
                         className={cn(
-                          'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                          'w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                           pathname.startsWith('/settings')
                             ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                             : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',

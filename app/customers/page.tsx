@@ -9,6 +9,7 @@ import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import type { Customer } from '@/lib/types'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -46,6 +47,7 @@ export default function CustomersPage() {
   const [notes, setNotes] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteCandidate, setDeleteCandidate] = useState<Customer | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/auth/login')
@@ -57,7 +59,7 @@ export default function CustomersPage() {
 
   const [createCustomer] = useCreateCustomerMutation()
   const [updateCustomer] = useUpdateCustomerMutation()
-  const [deleteCustomer] = useDeleteCustomerMutation()
+  const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation()
 
   useEffect(() => {
     if (!error) return
@@ -180,7 +182,7 @@ export default function CustomersPage() {
     }
   }
 
-  const handleDelete = async (c: Customer) => {
+  const handleDelete = (c: Customer) => {
     if (!canManageCustomers) {
       toast({
         title: 'Access denied',
@@ -190,9 +192,16 @@ export default function CustomersPage() {
       return
     }
     if (!currentShop) return
+    setDeleteCandidate(c)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return
+    if (!currentShop) return
     try {
-      await deleteCustomer({ shopId: currentShop.id, customerId: c.id }).unwrap()
+      await deleteCustomer({ shopId: currentShop.id, customerId: deleteCandidate.id }).unwrap()
       toast({ title: 'Deleted', description: 'Customer deleted' })
+      setDeleteCandidate(null)
     } catch (err) {
       toast({
         title: 'Error',
@@ -356,6 +365,21 @@ export default function CustomersPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => setDeleteCandidate(open ? deleteCandidate : null)}
+        title="Delete customer?"
+        description={
+          deleteCandidate ? (
+            <span>
+              This will permanently delete <span className="font-medium">{deleteCandidate.name}</span>.
+            </span>
+          ) : null
+        }
+        confirmText="Delete customer"
+        loading={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

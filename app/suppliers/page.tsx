@@ -9,6 +9,7 @@ import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import type { Supplier } from '@/lib/types'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -40,6 +41,7 @@ export default function SuppliersPage() {
   const [notes, setNotes] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteCandidate, setDeleteCandidate] = useState<Supplier | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/auth/login')
@@ -51,7 +53,7 @@ export default function SuppliersPage() {
 
   const [createSupplier] = useCreateSupplierMutation()
   const [updateSupplier] = useUpdateSupplierMutation()
-  const [deleteSupplier] = useDeleteSupplierMutation()
+  const [deleteSupplier, { isLoading: isDeleting }] = useDeleteSupplierMutation()
 
   useEffect(() => {
     if (!error) return
@@ -173,7 +175,7 @@ export default function SuppliersPage() {
     }
   }
 
-  const handleDelete = async (s: Supplier) => {
+  const handleDelete = (s: Supplier) => {
     if (!canManageInventory) {
       toast({
         title: 'Access denied',
@@ -183,9 +185,16 @@ export default function SuppliersPage() {
       return
     }
     if (!currentShop) return
+    setDeleteCandidate(s)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return
+    if (!currentShop) return
     try {
-      await deleteSupplier({ shopId: currentShop.id, supplierId: s.id }).unwrap()
+      await deleteSupplier({ shopId: currentShop.id, supplierId: deleteCandidate.id }).unwrap()
       toast({ title: 'Deleted', description: 'Supplier deleted' })
+      setDeleteCandidate(null)
     } catch (err) {
       toast({
         title: 'Error',
@@ -367,7 +376,21 @@ export default function SuppliersPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => setDeleteCandidate(open ? deleteCandidate : null)}
+        title="Delete supplier?"
+        description={
+          deleteCandidate ? (
+            <span>
+              This will permanently delete <span className="font-medium">{deleteCandidate.name}</span>.
+            </span>
+          ) : null
+        }
+        confirmText="Delete supplier"
+        loading={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }
-

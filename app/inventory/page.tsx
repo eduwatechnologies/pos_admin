@@ -209,6 +209,7 @@ export default function InventoryPage() {
         onSave={handleAddProduct}
         initialProduct={editingProduct}
         categories={categoryOptions}
+        shopId={currentShop?.id}
       />
     </div>
   )

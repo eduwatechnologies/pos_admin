@@ -9,6 +9,7 @@ import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import type { Category } from '@/lib/types'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -38,6 +39,7 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | null>(null)
   const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteCandidate, setDeleteCandidate] = useState<Category | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/auth/login')
@@ -49,7 +51,7 @@ export default function CategoriesPage() {
 
   const [createCategory] = useCreateCategoryMutation()
   const [updateCategory] = useUpdateCategoryMutation()
-  const [deleteCategory] = useDeleteCategoryMutation()
+  const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation()
 
   useEffect(() => {
     if (!error) return
@@ -113,11 +115,18 @@ export default function CategoriesPage() {
     }
   }
 
-  const handleDelete = async (c: Category) => {
+  const handleDelete = (c: Category) => {
+    if (!currentShop) return
+    setDeleteCandidate(c)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return
     if (!currentShop) return
     try {
-      await deleteCategory({ shopId: currentShop.id, categoryId: c.id }).unwrap()
+      await deleteCategory({ shopId: currentShop.id, categoryId: deleteCandidate.id }).unwrap()
       toast({ title: 'Deleted', description: 'Category deleted' })
+      setDeleteCandidate(null)
     } catch (err) {
       toast({
         title: 'Error',
@@ -276,6 +285,21 @@ export default function CategoriesPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDeleteDialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => setDeleteCandidate(open ? deleteCandidate : null)}
+        title="Delete category?"
+        description={
+          deleteCandidate ? (
+            <span>
+              This will permanently delete <span className="font-medium">{deleteCandidate.name}</span>.
+            </span>
+          ) : null
+        }
+        confirmText="Delete category"
+        loading={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

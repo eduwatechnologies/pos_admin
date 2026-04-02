@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { AlertCircle, EyeIcon, EyeOffIcon, StoreIcon } from 'lucide-react'
+import { AlertCircle, EyeIcon, EyeOffIcon, Loader2, StoreIcon } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function LoginPage() {
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [rememberEmail, setRememberEmail] = useState(() =>
     typeof window === 'undefined' ? false : !!localStorage.getItem('remember_email'),
   )
@@ -27,7 +28,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/dashboard')
+      setIsNavigating(true)
+      router.replace('/dashboard')
     }
   }, [isAuthenticated, router])
 
@@ -36,6 +38,10 @@ export default function LoginPage() {
     if (rememberEmail) localStorage.setItem('remember_email', email)
     else localStorage.removeItem('remember_email')
   }, [email, rememberEmail])
+
+  useEffect(() => {
+    router.prefetch('/dashboard')
+  }, [router])
 
   function getErrorMessage(err: unknown) {
     if (typeof err === 'string') return err
@@ -60,11 +66,14 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
-      router.push('/dashboard')
+      setIsNavigating(true)
+      router.replace('/dashboard')
     } catch (err) {
       setError(getErrorMessage(err))
     }
   }
+
+  const busy = isLoading || isNavigating
 
   return (
     <Card className="border-0 shadow-none">
@@ -79,6 +88,14 @@ export default function LoginPage() {
         <CardDescription>Sign in to continue to your dashboard.</CardDescription>
       </CardHeader>
       <CardContent>
+        {isNavigating ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+              <Loader2 className="size-5 animate-spin text-primary" />
+              <div className="text-sm font-medium text-card-foreground">Loading dashboard…</div>
+            </div>
+          </div>
+        ) : null}
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <Alert variant="destructive">
@@ -142,8 +159,8 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in…' : 'Sign in'}
+          <Button type="submit" className="w-full" disabled={busy}>
+            {busy ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
       </CardContent>

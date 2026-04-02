@@ -1,11 +1,15 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from '@/context/auth-context'
 import { ShopProvider } from '@/context/shop-context'
 import { SyncProvider } from '@/context/sync-context'
 import { ReduxProvider } from '@/redux/provider'
 import { LayoutContent } from '@/components/layout-content'
 import './globals.css'
+
+const fontSans = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+const fontMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'POS Dashboard',
@@ -37,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <body className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}>
         <ReduxProvider>
           <AuthProvider>
             <ShopProvider>

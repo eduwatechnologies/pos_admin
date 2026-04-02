@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Employee } from '@/lib/types'
 import { Edit2, Trash2, Search } from 'lucide-react'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 
 interface EmployeesTableProps {
   employees: Employee[]
@@ -27,6 +28,8 @@ export function EmployeesTable({ employees, onEdit, onDelete, disableActions }: 
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [deleteCandidate, setDeleteCandidate] = useState<Employee | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
 
   const roleOptions = useMemo(() => {
@@ -47,6 +50,17 @@ export function EmployeesTable({ employees, onEdit, onDelete, disableActions }: 
       return matchesSearch && matchesRole && matchesStatus
     })
   }, [employees, searchTerm, roleFilter, statusFilter])
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return
+    setIsDeleting(true)
+    try {
+      await onDelete(deleteCandidate.id)
+      setDeleteCandidate(null)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -181,7 +195,7 @@ export function EmployeesTable({ employees, onEdit, onDelete, disableActions }: 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onDelete(employee.id)}
+                          onClick={() => setDeleteCandidate(employee)}
                           disabled={disableActions}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -195,6 +209,21 @@ export function EmployeesTable({ employees, onEdit, onDelete, disableActions }: 
           </div>
         </CardContent>
       </Card>
+      <ConfirmDeleteDialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => setDeleteCandidate(open ? deleteCandidate : null)}
+        title="Delete employee?"
+        description={
+          deleteCandidate ? (
+            <span>
+              This will permanently delete <span className="font-medium">{deleteCandidate.name}</span>.
+            </span>
+          ) : null
+        }
+        confirmText="Delete employee"
+        loading={isDeleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

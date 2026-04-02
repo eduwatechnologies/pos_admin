@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import {
   useCreateRoleMutation,
   useDeleteRoleMutation,
@@ -53,6 +54,7 @@ export default function SettingsPermissionsPage() {
   const [newRoleKey, setNewRoleKey] = useState('')
   const [renamingRoleKey, setRenamingRoleKey] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [deleteRoleKey, setDeleteRoleKey] = useState<string | null>(null)
 
   const [form, setForm] = useState<PermissionsForm>({
     rolePermissions: {
@@ -107,6 +109,33 @@ export default function SettingsPermissionsPage() {
 
   const isDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial])
   const isRoleBusy = isSaving || isCreatingRole || isUpdatingRole || isDeletingRole
+
+  const deleteRoleLabel = useMemo(() => {
+    if (!deleteRoleKey) return ''
+    return deleteRoleKey.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
+  }, [deleteRoleKey])
+
+  const confirmDeleteRole = async () => {
+    if (!deleteRoleKey) return
+    if (!currentShop) return
+    try {
+      const res = await deleteRole({ shopId: currentShop.id, roleKey: deleteRoleKey }).unwrap()
+      const next: PermissionsForm = { rolePermissions: res.rolePermissions as RolePermissionsState }
+      setForm(next)
+      setInitial(next)
+      toast({ title: 'Role deleted', description: deleteRoleLabel })
+      setDeleteRoleKey(null)
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description:
+          (err as any)?.data?.error ??
+          (err as any)?.data?.message ??
+          (err instanceof Error ? err.message : 'Failed to delete role'),
+        variant: 'destructive',
+      })
+    }
+  }
 
   const handleCreateRole = async () => {
     if (!currentShop) return
@@ -333,28 +362,11 @@ export default function SettingsPermissionsPage() {
                                     })
                                     return
                                   }
-                                  deleteRole({ shopId: currentShop.id, roleKey })
-                                    .unwrap()
-                                    .then((res) => {
-                                      const next: PermissionsForm = { rolePermissions: res.rolePermissions as RolePermissionsState }
-                                      setForm(next)
-                                      setInitial(next)
-                                      toast({ title: 'Role deleted', description: roleLabel })
-                                    })
-                                    .catch((err) => {
-                                      toast({
-                                        title: 'Error',
-                                        description:
-                                          (err as any)?.data?.error ??
-                                          (err as any)?.data?.message ??
-                                          (err instanceof Error ? err.message : 'Failed to delete role'),
-                                        variant: 'destructive',
-                                      })
-                                    })
+                                  setDeleteRoleKey(roleKey)
                                 }}
                                 disabled={!currentShop || isRoleBusy}
                               >
-                                {isDeletingRole ? 'Deleting…' : 'Delete'}
+                                Delete
                               </Button>
                             ) : null}
                           </div>
@@ -455,6 +467,21 @@ export default function SettingsPermissionsPage() {
           </div>
         </CardContent>
       </Card>
+      <ConfirmDeleteDialog
+        open={!!deleteRoleKey}
+        onOpenChange={(open) => setDeleteRoleKey(open ? deleteRoleKey : null)}
+        title="Delete role?"
+        description={
+          deleteRoleKey ? (
+            <span>
+              This will permanently delete <span className="font-medium">{deleteRoleLabel}</span> role.
+            </span>
+          ) : null
+        }
+        confirmText="Delete role"
+        loading={isDeletingRole}
+        onConfirm={confirmDeleteRole}
+      />
     </div>
   )
 }
