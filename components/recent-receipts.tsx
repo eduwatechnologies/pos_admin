@@ -14,7 +14,8 @@ export function RecentReceipts({ receipts }: RecentReceiptsProps) {
   const paymentStyles: Record<string, string> = {
     cash: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
     card: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
-    digital: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+    transfer: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+    other: 'bg-muted text-muted-foreground',
   }
 
   return (

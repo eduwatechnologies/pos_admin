@@ -1,18 +1,19 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
-import { useGetProductDetailQuery } from '@/redux/api/products-api'
+import { useAdjustStockMutation, useGetProductDetailQuery } from '@/redux/api/products-api'
+import { useGetSettingsQuery } from '@/redux/api/settings-api'
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>()
   const productId = String((params as any)?.id ?? '')
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const { currentShop } = useShop()
   const { toast } = useToast()
 
@@ -25,6 +26,12 @@ export default function ProductDetailPage() {
     { shopId: currentShop?.id ?? '', productId },
     { skip },
   )
+  const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip: !isAuthenticated || !currentShop })
+  const [adjustStock, { isLoading: isAdjusting }] = useAdjustStockMutation()
+
+  const [adjustMode, setAdjustMode] = useState<'increase' | 'decrease'>('increase')
+  const [adjustQty, setAdjustQty] = useState<string>('1')
+  const [adjustReason, setAdjustReason] = useState<string>('')
 
   useEffect(() => {
     if (!error) return
@@ -42,11 +49,43 @@ export default function ProductDetailPage() {
     return map
   }, [data?.suppliers])
 
+  const canManageInventory = useMemo(() => {
+    if (!user) return false
+    if (user.role === 'admin' || user.role === 'super_admin') return true
+    const roleKey = String(user.role ?? '')
+    return Boolean((settings?.rolePermissions as any)?.[roleKey]?.inventory)
+  }, [settings?.rolePermissions, user])
+
   if (!isAuthenticated) return null
   if (!currentShop) return null
 
   const product = data?.product
   const purchases = data?.purchases ?? []
+  const movements = data?.movements ?? []
+  const qtyNumber = Math.floor(Number(adjustQty))
+  const canSubmitAdjust = canManageInventory && product && Number.isFinite(qtyNumber) && qtyNumber > 0 && adjustReason.trim() && !isAdjusting
+
+  const submitAdjust = async () => {
+    if (!currentShop || !product) return
+    const qty = Math.floor(Number(adjustQty))
+    if (!Number.isFinite(qty) || qty <= 0) return
+    const reason = adjustReason.trim()
+    if (!reason) return
+    const delta = adjustMode === 'decrease' ? -qty : qty
+    try {
+      await adjustStock({ shopId: currentShop.id, productId: product.id, input: { delta, reason } }).unwrap()
+      setAdjustQty('1')
+      setAdjustReason('')
+      toast({ title: 'Success', description: 'Stock adjusted' })
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description:
+          (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to adjust stock'),
+        variant: 'destructive',
+      })
+    }
+  }
 
   return (
     <div className="space-y-8 p-4 md:p-8">
@@ -87,6 +126,63 @@ export default function ProductDetailPage() {
               Status: <span className="text-card-foreground">{product.quantity === 0 ? 'Out of stock' : 'Active'}</span>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {product ? (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="text-lg font-semibold tracking-tight">Adjust Stock</div>
+              <div className="text-sm text-muted-foreground">Increase or decrease stock with a reason.</div>
+            </div>
+            <Button type="button" variant="outline" className="h-9" disabled={!canSubmitAdjust} onClick={submitAdjust}>
+              {isAdjusting ? 'Saving…' : 'Apply'}
+            </Button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Type</label>
+              <select
+                value={adjustMode}
+                onChange={(e) => setAdjustMode(e.target.value === 'decrease' ? 'decrease' : 'increase')}
+                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={!canManageInventory || isAdjusting}
+              >
+                <option value="increase">Increase</option>
+                <option value="decrease">Decrease</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantity</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                value={adjustQty}
+                onChange={(e) => setAdjustQty(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={!canManageInventory || isAdjusting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason</label>
+              <input
+                type="text"
+                placeholder="e.g. damaged, recount, correction"
+                value={adjustReason}
+                onChange={(e) => setAdjustReason(e.target.value)}
+                className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={!canManageInventory || isAdjusting}
+              />
+            </div>
+          </div>
+
+          {!canManageInventory ? <div className="mt-3 text-sm text-destructive">You do not have permission to adjust stock.</div> : null}
         </div>
       ) : null}
 
@@ -157,7 +253,53 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">Stock Movements</h2>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Qty</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Source</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {movements.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-4 text-sm text-muted-foreground" colSpan={5}>
+                      No movements found for this product
+                    </td>
+                  </tr>
+                ) : (
+                  movements.map((m) => (
+                    <tr key={m.id} className="transition-colors hover:bg-muted/50">
+                      <td className="px-5 py-3.5 text-sm text-card-foreground">
+                        {m.occurredAt instanceof Date && !Number.isNaN(m.occurredAt.getTime()) ? m.occurredAt.toLocaleString() : '-'}
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-muted-foreground">{m.type || '-'}</td>
+                      <td className="px-5 py-3.5 text-right text-sm font-semibold text-card-foreground">
+                        {m.qtyDelta > 0 ? `+${m.qtyDelta}` : String(m.qtyDelta)}
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-muted-foreground">
+                        {m.sourceType ? `${m.sourceType}${m.sourceId ? `#${m.sourceId.slice(-6)}` : ''}` : '-'}
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-muted-foreground">{m.notes ?? '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
-

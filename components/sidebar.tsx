@@ -21,6 +21,7 @@ import {
   Truck,
   CircleDollarSign,
   ClipboardList,
+  FileText,
   Settings,
   User,
   Users,
@@ -108,7 +109,10 @@ export function Sidebar() {
     },
     {
       label: 'Finance',
-      items: [{ href: '/expenses', label: 'Expenses', icon: CircleDollarSign, perm: 'analytics' }],
+      items: [
+        { href: '/expenses', label: 'Expenses', icon: CircleDollarSign, perm: 'analytics' },
+        { href: '/supplier-bills', label: 'Supplier Bills', icon: FileText, perm: 'inventory' },
+      ],
     },
     {
       label: 'People',

@@ -16,6 +16,17 @@ type ProductDetailResponse = {
   product: ApiProduct
   purchases: ProductPurchaseLine[]
   suppliers: { id: string; name: string }[]
+  movements: {
+    id: string
+    occurredAt: Date
+    type: string
+    qtyDelta: number
+    sourceType: string
+    sourceId: string
+    unitPrice?: number
+    unitCost?: number
+    notes?: string
+  }[]
 }
 
 function toDate(input: any) {
@@ -122,13 +133,46 @@ export const productsApi = baseApi.injectEndpoints({
           lineTotal: Number(p?.lineTotalCents ?? 0) / 100,
         }))
 
+        const movementsRaw = Array.isArray(response?.movements) ? response.movements : []
+        const movements = movementsRaw.map((m: any) => ({
+          id: String(m?._id ?? m?.id ?? ''),
+          occurredAt: toDate(m?.occurredAt),
+          type: String(m?.type ?? ''),
+          qtyDelta: Number(m?.qtyDelta ?? 0),
+          sourceType: String(m?.sourceType ?? ''),
+          sourceId: String(m?.sourceId ?? ''),
+          unitPrice: m?.unitPriceCents === null || m?.unitPriceCents === undefined ? undefined : Number(m.unitPriceCents ?? 0) / 100,
+          unitCost: m?.unitCostCents === null || m?.unitCostCents === undefined ? undefined : Number(m.unitCostCents ?? 0) / 100,
+          notes: m?.notes ? String(m.notes) : undefined,
+        }))
+
         return {
           product: mapProduct(response?.item),
           purchases,
           suppliers,
+          movements,
         }
       },
       providesTags: (_result, _err, arg) => [{ type: 'Product', id: arg.productId }],
+    }),
+    adjustStock: build.mutation<
+      ApiProduct,
+      {
+        shopId: string
+        productId: string
+        input: { delta: number; reason: string }
+      }
+    >({
+      query: ({ shopId, productId, input }) => ({
+        url: `/shops/${shopId}/products/${productId}/adjust-stock`,
+        method: 'POST',
+        body: { delta: input.delta, reason: input.reason },
+      }),
+      transformResponse: (response: any) => mapProduct(response?.item),
+      invalidatesTags: (_result, _err, arg) => [
+        { type: 'Product', id: arg.productId },
+        { type: 'Product', id: 'LIST' },
+      ],
     }),
   }),
 })
@@ -139,4 +183,5 @@ export const {
   useUpdateProductMutation,
   useDeleteProductMutation,
   useGetProductDetailQuery,
+  useAdjustStockMutation,
 } = productsApi

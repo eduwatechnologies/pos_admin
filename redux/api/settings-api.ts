@@ -15,6 +15,8 @@ export const settingsApi = baseApi.injectEndpoints({
         phone: string
         currency: string
         name: string
+        taxRateBps: number
+        allowNegativeStock: boolean
         rolePermissions: RolePermissions
       },
       { shopId: string }
@@ -28,6 +30,8 @@ export const settingsApi = baseApi.injectEndpoints({
           phone: s?.phone ? String(s.phone) : '',
           currency: String(s?.currency ?? 'NGN'),
           name: String(s?.name ?? ''),
+          taxRateBps: Number(s?.taxRateBps ?? 0),
+          allowNegativeStock: s?.allowNegativeStock === true,
           rolePermissions: (s?.rolePermissions ?? {
             admin: {
               dashboard: true,
@@ -61,6 +65,8 @@ export const settingsApi = baseApi.injectEndpoints({
         phone: string
         currency: string
         name: string
+        taxRateBps: number
+        allowNegativeStock: boolean
         rolePermissions: RolePermissions
       },
       {
@@ -71,6 +77,8 @@ export const settingsApi = baseApi.injectEndpoints({
           businessName: string
           address: string
           phone: string
+          taxRateBps: number
+          allowNegativeStock: boolean
           rolePermissions: RolePermissions
         }>
       }
@@ -84,6 +92,8 @@ export const settingsApi = baseApi.injectEndpoints({
           phone: s?.phone ? String(s.phone) : '',
           currency: String(s?.currency ?? 'NGN'),
           name: String(s?.name ?? ''),
+          taxRateBps: Number(s?.taxRateBps ?? 0),
+          allowNegativeStock: s?.allowNegativeStock === true,
           rolePermissions: (s?.rolePermissions ?? {
             admin: {
               dashboard: true,

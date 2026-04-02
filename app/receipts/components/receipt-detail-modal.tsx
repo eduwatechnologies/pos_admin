@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,9 @@ interface ReceiptDetailModalProps {
   onOpenChange: (open: boolean) => void
   onPrint: (receipt: Receipt) => void
   onShare: (receipt: Receipt) => void
+  onRefund?: (receipt: Receipt, reason: string) => void
+  canRefund?: boolean
+  isRefunding?: boolean
 }
 
 export function ReceiptDetailModal({
@@ -33,9 +37,24 @@ export function ReceiptDetailModal({
   onOpenChange,
   onPrint,
   onShare,
+  onRefund,
+  canRefund,
+  isRefunding,
 }: ReceiptDetailModalProps) {
   if (!receipt) return null
   const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' })
+  const [refundReason, setRefundReason] = useState<string>('')
+
+  useEffect(() => {
+    if (!open) setRefundReason('')
+  }, [open])
+
+  useEffect(() => {
+    setRefundReason('')
+  }, [receipt?.id])
+
+  const isRefunded = String(receipt.status ?? '').toLowerCase() === 'refunded'
+  const refundDisabled = !onRefund || !canRefund || isRefunded || !refundReason.trim() || isRefunding
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,6 +85,20 @@ export function ReceiptDetailModal({
               <p className="text-sm text-muted-foreground">Customer</p>
               <p className="font-medium">{receipt.customerName || 'N/A'}</p>
             </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Status</p>
+              <p className="font-medium capitalize">{String(receipt.status ?? 'paid')}</p>
+            </div>
+            {isRefunded ? (
+              <div>
+                <p className="text-sm text-muted-foreground">Refunded At</p>
+                <p className="font-medium">
+                  {receipt.refundedAt ? `${receipt.refundedAt.toLocaleDateString()} ${receipt.refundedAt.toLocaleTimeString()}` : '—'}
+                </p>
+              </div>
+            ) : (
+              <div />
+            )}
           </div>
 
           {/* Items Table */}
@@ -102,7 +135,7 @@ export function ReceiptDetailModal({
               <span>{money.format(receipt.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tax (8%)</span>
+              <span className="text-muted-foreground">Tax</span>
               <span>{money.format(receipt.tax)}</span>
             </div>
             <div className="flex justify-between text-lg font-bold border-t pt-2">
@@ -110,6 +143,35 @@ export function ReceiptDetailModal({
               <span>{money.format(receipt.total)}</span>
             </div>
           </div>
+
+          {isRefunded ? (
+            <div className="rounded-lg border border-border bg-muted/30 p-4">
+              <div className="text-sm font-medium">Refunded</div>
+              <div className="mt-1 text-sm text-muted-foreground">{receipt.refundReason ? receipt.refundReason : 'No reason provided'}</div>
+            </div>
+          ) : onRefund ? (
+            <div className="rounded-lg border border-border p-4">
+              <div className="text-sm font-medium">Refund</div>
+              <div className="mt-1 text-sm text-muted-foreground">This will mark the receipt as refunded and return items to stock.</div>
+              <textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                rows={3}
+                className="mt-3 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Refund reason"
+                disabled={!canRefund || Boolean(isRefunding)}
+              />
+              <div className="mt-3 flex justify-end">
+                <Button
+                  variant="destructive"
+                  disabled={refundDisabled}
+                  onClick={() => onRefund(receipt, refundReason.trim())}
+                >
+                  {isRefunding ? 'Refunding…' : 'Refund Receipt'}
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           {/* Notes */}
           {receipt.notes && (

@@ -23,6 +23,7 @@ export const baseApi = createApi({
     'Supplier',
     'Purchase',
     'Expense',
+    'SupplierBill',
     'Audit',
     'Receipt',
     'Settings',

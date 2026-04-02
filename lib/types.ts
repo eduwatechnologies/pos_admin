@@ -1,6 +1,6 @@
 export type UserRole = 'admin' | 'super_admin' | (string & {})
 export type UserStatus = 'active' | 'inactive'
-export type PaymentMethod = 'cash' | 'card' | 'digital'
+export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'other' | (string & {})
 
 export interface Shop {
   id: string
@@ -66,6 +66,9 @@ export interface Receipt {
   tax: number
   total: number
   paymentMethod: PaymentMethod
+  status?: 'paid' | 'refunded' | string
+  refundedAt?: Date
+  refundReason?: string
   cashierId: string
   cashierName?: string
   shopId?: string
@@ -137,6 +140,42 @@ export interface Purchase {
   notes?: string
   items: PurchaseItem[]
   totalCost: number
+  createdAt: Date
+  shopId?: string
+}
+
+export interface SupplierBillItem {
+  productId?: string
+  description: string
+  qty: number
+  unitCost: number
+  subtotal: number
+}
+
+export interface SupplierBillPayment {
+  amount: number
+  method: string
+  paidAt: Date
+  reference?: string
+  notes?: string
+  createdByUserId?: string
+}
+
+export interface SupplierBill {
+  id: string
+  supplierId: string
+  reference: string
+  status: 'unpaid' | 'partially_paid' | 'paid' | 'voided' | (string & {})
+  items: SupplierBillItem[]
+  subtotal: number
+  total: number
+  paid: number
+  dueDate: Date
+  payments: SupplierBillPayment[]
+  notes?: string
+  sourceType?: string
+  sourceId?: string
+  createdByUserId?: string
   createdAt: Date
   shopId?: string
 }

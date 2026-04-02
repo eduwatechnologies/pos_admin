@@ -44,6 +44,7 @@ import { useListCategoriesQuery } from '@/redux/api/categories-api'
 import { useListProductsQuery } from '@/redux/api/products-api'
 import { useCreateReceiptMutation } from '@/redux/api/receipts-api'
 import { useCreateCustomerMutation, useListCustomersQuery } from '@/redux/api/customers-api'
+import { useGetSettingsQuery } from '@/redux/api/settings-api'
 
 type CartLine = {
   productId: string
@@ -81,7 +82,7 @@ export default function TerminalPage() {
   const [customerName, setCustomerName] = useState(walkInName)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
   const [customerQuery, setCustomerQuery] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'digital'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash')
   const [cart, setCart] = useState<Record<string, CartLine>>({})
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>('idle')
   const [scannerOpen, setScannerOpen] = useState(false)
@@ -105,6 +106,7 @@ export default function TerminalPage() {
   )
   const { data: categoryItems = [] } = useListCategoriesQuery({ shopId: currentShop?.id ?? '' }, { skip })
   const { data: customers = [] } = useListCustomersQuery({ shopId: currentShop?.id ?? '' }, { skip })
+  const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip })
 
   const [createReceipt, { isLoading: isCheckingOut }] = useCreateReceiptMutation()
   const [createCustomer, { isLoading: isCreatingCustomer }] = useCreateCustomerMutation()
@@ -140,10 +142,12 @@ export default function TerminalPage() {
   const totals = useMemo(() => {
     const lines = Object.values(cart)
     const subtotal = lines.reduce((sum, l) => sum + l.unitPrice * l.qty, 0)
-    const taxAmount = subtotal * 0.08
+    const taxRateBps = Number(settings?.taxRateBps ?? 800)
+    const safeTaxRateBps = Number.isFinite(taxRateBps) && taxRateBps >= 0 ? taxRateBps : 0
+    const taxAmount = (subtotal * safeTaxRateBps) / 10000
     const total = subtotal + taxAmount
     return { subtotal, taxAmount, total, count: lines.reduce((sum, l) => sum + l.qty, 0) }
-  }, [cart])
+  }, [cart, settings?.taxRateBps])
 
   const canCheckout = !!currentShop && totals.count > 0 && !isCheckingOut && checkoutStep !== 'processing'
 
@@ -414,7 +418,7 @@ export default function TerminalPage() {
     setCheckoutStep('payment')
   }
 
-  const handlePayment = async (method: 'cash' | 'card' | 'digital') => {
+  const handlePayment = async (method: 'cash' | 'card' | 'transfer') => {
     if (!currentShop) return
     setPaymentMethod(method)
     setCheckoutStep('processing')
@@ -667,7 +671,7 @@ export default function TerminalPage() {
                 {([
                   { id: 'card', label: 'Credit / Debit Card', icon: CreditCard },
                   { id: 'cash', label: 'Cash', icon: Banknote },
-                  { id: 'digital', label: 'Mobile Payment', icon: Smartphone },
+                  { id: 'transfer', label: 'Transfer / Mobile', icon: Smartphone },
                 ] as const).map((method) => (
                   <button
                     key={method.id}

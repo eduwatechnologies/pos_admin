@@ -28,7 +28,7 @@ export const receiptsApi = baseApi.injectEndpoints({
         input: {
           items: Array<{ productId: string; qty: number; name?: string; unitPriceCents?: number }>
           customerName?: string
-          paymentMethod: 'cash' | 'card' | 'digital' | string
+          paymentMethod: 'cash' | 'card' | 'transfer' | 'other' | string
           taxCents?: number
         }
       }
@@ -54,7 +54,27 @@ export const receiptsApi = baseApi.injectEndpoints({
         { type: 'Product', id: 'LIST' },
       ],
     }),
+    refundReceipt: build.mutation<
+      ApiReceipt,
+      {
+        shopId: string
+        receiptId: string
+        input: { reason: string }
+      }
+    >({
+      query: ({ shopId, receiptId, input }) => ({
+        url: `/shops/${shopId}/receipts/${receiptId}/refund`,
+        method: 'POST',
+        body: { reason: input.reason },
+      }),
+      transformResponse: (response: any) => mapReceipt(response?.item),
+      invalidatesTags: (_result, _err, arg) => [
+        { type: 'Receipt', id: arg.receiptId },
+        { type: 'Receipt', id: 'LIST' },
+        { type: 'Product', id: 'LIST' },
+      ],
+    }),
   }),
 })
 
-export const { useListReceiptsQuery, useCreateReceiptMutation } = receiptsApi
+export const { useListReceiptsQuery, useCreateReceiptMutation, useRefundReceiptMutation } = receiptsApi

@@ -1,5 +1,5 @@
-import { useMemo, useRef } from "react";
-import { Printer, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Printer, Share2, X } from "lucide-react";
 
 interface ReceiptItem {
   name: string;
@@ -20,6 +20,7 @@ interface PrintableReceiptProps {
   storeLines?: string[];
   transactionId?: string;
   date?: Date;
+  initialAction?: "print" | "share";
   onClose: () => void;
 }
 
@@ -36,9 +37,12 @@ const PrintableReceipt = ({
   storeLines,
   transactionId,
   date,
+  initialAction,
   onClose,
 }: PrintableReceiptProps) => {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const initialActionRef = useRef<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "shared">("idle");
   const fallbackTransactionId = `TXN-${Date.now().toString(36).toUpperCase()}`;
   const txId = transactionId || fallbackTransactionId;
   const now = date ? new Date(date) : new Date();
@@ -57,7 +61,11 @@ const PrintableReceipt = ({
       ? "Credit / Debit Card"
       : paymentMethod === "cash"
       ? "Cash"
-      : "Mobile Payment";
+      : paymentMethod === "transfer"
+      ? "Bank Transfer"
+      : paymentMethod === "other"
+      ? "Other"
+      : "Other";
 
   const money = useMemo(() => {
     return (amount: number) =>
@@ -67,7 +75,33 @@ const PrintableReceipt = ({
       }).format(Number.isFinite(amount) ? amount : 0);
   }, [currency]);
 
-  const handlePrint = () => {
+  const buildShareText = useCallback(() => {
+    const lines: string[] = [];
+    lines.push(String(storeName || "Store"));
+    if (Array.isArray(storeLines) && storeLines.length) {
+      for (const l of storeLines) {
+        const s = String(l || "").trim();
+        if (s) lines.push(s);
+      }
+    }
+    lines.push(`Receipt: ${txId}`);
+    lines.push(`Date: ${dateStr} ${timeStr}`);
+    if (customerName) lines.push(`Customer: ${customerName}`);
+    if (cashierName) lines.push(`Cashier: ${cashierName}`);
+    lines.push(`Paid with: ${methodLabel}`);
+    lines.push("");
+    lines.push("Items:");
+    for (const i of items) {
+      lines.push(`- ${i.name} x${i.quantity} @ ${money(i.price)} = ${money(i.price * i.quantity)}`);
+    }
+    lines.push("");
+    lines.push(`Subtotal: ${money(subtotal)}`);
+    lines.push(`Tax: ${money(tax)}`);
+    lines.push(`Total: ${money(total)}`);
+    return lines.join("\n");
+  }, [cashierName, customerName, dateStr, items, methodLabel, money, storeLines, storeName, subtotal, tax, timeStr, total, txId]);
+
+  const handlePrint = useCallback(() => {
     const content = receiptRef.current;
     if (!content) return;
 
@@ -104,7 +138,43 @@ const PrintableReceipt = ({
     printWindow.focus();
     printWindow.print();
     printWindow.close();
-  };
+  }, []);
+
+  const handleShare = useCallback(async () => {
+    if (shareStatus === "sharing") return;
+    setShareStatus("sharing");
+    try {
+      const text = buildShareText();
+      const nav: any = navigator as any;
+      if (nav?.share) {
+        await nav.share({ title: `Receipt ${txId}`, text });
+        setShareStatus("shared");
+        return;
+      }
+      if (nav?.clipboard?.writeText) {
+        await nav.clipboard.writeText(text);
+        setShareStatus("shared");
+        return;
+      }
+      window.prompt("Copy receipt text:", text);
+      setShareStatus("shared");
+    } catch {
+      setShareStatus("idle");
+    }
+  }, [buildShareText, shareStatus, txId]);
+
+  useEffect(() => {
+    if (!initialAction) return;
+    if (initialActionRef.current === initialAction) return;
+    initialActionRef.current = initialAction;
+    if (initialAction === "print") {
+      setTimeout(() => handlePrint(), 50);
+      return;
+    }
+    if (initialAction === "share") {
+      void handleShare();
+    }
+  }, [handlePrint, handleShare, initialAction]);
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -210,6 +280,13 @@ const PrintableReceipt = ({
             className="flex-1 h-10 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:bg-muted transition-colors"
           >
             Close
+          </button>
+          <button
+            onClick={() => void handleShare()}
+            className="flex-1 h-10 rounded-lg border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors flex items-center justify-center gap-1.5"
+          >
+            <Share2 className="w-4 h-4" />
+            {shareStatus === "shared" ? "Copied" : shareStatus === "sharing" ? "Sharing…" : "Share"}
           </button>
           <button
             onClick={handlePrint}

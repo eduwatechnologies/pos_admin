@@ -83,6 +83,7 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
                   <TableHead>Customer</TableHead>
                   <TableHead>Cashier</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Payment</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
@@ -99,6 +100,7 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
                     <TableCell className="text-right font-medium">
                       {money.format(receipt.total)}
                     </TableCell>
+                    <TableCell className="text-sm capitalize">{String(receipt.status ?? 'paid')}</TableCell>
                     <TableCell className="text-sm capitalize">{receipt.paymentMethod}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-1">

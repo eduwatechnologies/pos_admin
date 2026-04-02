@@ -65,7 +65,10 @@ export type ApiReceipt = {
   subtotal: number
   tax: number
   total: number
-  paymentMethod: 'cash' | 'card' | 'digital' | string
+  paymentMethod: 'cash' | 'card' | 'transfer' | 'other' | string
+  status?: 'paid' | 'refunded' | string
+  refundedAt?: Date
+  refundReason?: string
   cashierId: string
   cashierName?: string
   shopId?: string
@@ -163,6 +166,9 @@ export function mapReceipt(r: any, cashierNameById?: Map<string, string>): ApiRe
     tax: Number(r?.taxCents ?? 0) / 100,
     total: Number(r?.totalCents ?? 0) / 100,
     paymentMethod: String(r?.paymentMethod ?? ''),
+    status: r?.status ? String(r.status) : undefined,
+    refundedAt: r?.refundedAt ? toIsoDate(r.refundedAt) : undefined,
+    refundReason: r?.refundReason ? String(r.refundReason) : undefined,
     cashierId,
     cashierName: cashierNameById?.get(cashierId),
     shopId: r?.shopId ? String(r.shopId) : undefined,

@@ -112,7 +112,7 @@ export default function SettingsSystemClient() {
   const handleSave = async () => {
     if (!currentShop) return
     try {
-      const updated = await updateSettings({ shopId: currentShop.id, input: form }).unwrap()
+      const updated = await updateSettings({ shopId: currentShop.id, input: { currency: form.currency } }).unwrap()
       const next: SystemForm = { currency: updated.currency ?? 'NGN' }
       setForm(next)
       setInitial(next)
@@ -167,7 +167,7 @@ export default function SettingsSystemClient() {
             <label className="text-sm font-medium">Currency</label>
             <select
               value={form.currency}
-              onChange={(e) => setForm({ currency: e.target.value })}
+              onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
               className="w-full px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               disabled={!currentShop || isSaving}
             >

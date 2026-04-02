@@ -219,7 +219,7 @@ export const generateMockReceipts = (): Receipt[] => {
       subtotal: Math.round(subtotal * 100) / 100,
       tax,
       total,
-      paymentMethod: ['cash', 'card', 'digital'][Math.floor(Math.random() * 3)] as any,
+      paymentMethod: ['cash', 'card', 'transfer', 'other'][Math.floor(Math.random() * 4)] as any,
       cashierId: employee.id,
       cashierName: employee.name,
     })
