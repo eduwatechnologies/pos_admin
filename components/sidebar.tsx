@@ -29,7 +29,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { SyncStatus } from './sync-status'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useShop } from '@/context/shop-context'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
@@ -405,28 +405,99 @@ export function TopNav() {
   const isActive = (href: string) => pathname.startsWith(href)
   const items = groups.flatMap((g) => g.items.filter((i) => (i.perm ? canUse(i.perm) : true)))
 
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const [showLeft, setShowLeft] = useState(false)
+  const [showRight, setShowRight] = useState(false)
+
+  const recalcOverflow = () => {
+    const el = scrollerRef.current
+    if (!el) return
+    const { scrollLeft, scrollWidth, clientWidth } = el
+    setShowLeft(scrollLeft > 2)
+    setShowRight(scrollLeft + clientWidth < scrollWidth - 2)
+  }
+
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    recalcOverflow()
+    const onScroll = () => recalcOverflow()
+    el.addEventListener('scroll', onScroll, { passive: true })
+    const onResize = () => recalcOverflow()
+    window.addEventListener('resize', onResize)
+    return () => {
+      el.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+
+  const scrollBy = (delta: number) => {
+    const el = scrollerRef.current
+    if (!el) return
+    el.scrollBy({ left: delta, behavior: 'smooth' })
+  }
+
   return (
     <div className="sticky top-14 z-10 border-b border-border bg-background/80 backdrop-blur">
-      <div className="flex items-center gap-2 overflow-x-auto px-4 py-2">
-        {items.map((item) => {
-          const Icon = item.icon
-          const active = isActive(item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors',
-                active
-                  ? 'bg-secondary text-secondary-foreground font-medium'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-secondary-foreground',
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          )
-        })}
+      <div className="relative">
+        <div
+          ref={scrollerRef}
+          className="flex items-center gap-2 overflow-x-auto px-4 py-2 scroll-smooth"
+        >
+          {items.map((item) => {
+            const Icon = item.icon
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors',
+                  active
+                    ? 'bg-secondary text-secondary-foreground font-medium'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-secondary-foreground',
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+
+        {showLeft ? (
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-background to-transparent" />
+        ) : null}
+        {showRight ? (
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-background to-transparent" />
+        ) : null}
+
+        <div className="absolute inset-y-0 left-1 flex items-center">
+          <button
+            type="button"
+            aria-label="Scroll left"
+            onClick={() => scrollBy(-200)}
+            className={cn(
+              'h-7 w-7 rounded-md border bg-card text-muted-foreground shadow-sm hover:text-foreground transition-colors',
+              showLeft ? 'opacity-100' : 'opacity-0 pointer-events-none',
+            )}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="absolute inset-y-0 right-1 flex items-center">
+          <button
+            type="button"
+            aria-label="Scroll right"
+            onClick={() => scrollBy(200)}
+            className={cn(
+              'h-7 w-7 rounded-md border bg-card text-muted-foreground shadow-sm hover:text-foreground transition-colors',
+              showRight ? 'opacity-100' : 'opacity-0 pointer-events-none',
+            )}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -203,7 +203,12 @@ export function LayoutContent({
       ) : null}
       <main className={`min-h-screen ${user && navLayout === 'sidebar' ? 'md:ml-[var(--sidebar-width)]' : ''}`}>
         <TopHeader />
-        {user && navLayout === 'topbar' ? <TopNav /> : null}
+        {user && navLayout === 'topbar' ? (
+          <>
+            <TopNav />
+            <div className="h-10" />
+          </>
+        ) : null}
         {children}
       </main>
     </>
