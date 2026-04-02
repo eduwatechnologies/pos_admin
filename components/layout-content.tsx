@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Sidebar } from '@/components/sidebar'
+import { Sidebar, TopNav } from '@/components/sidebar'
 import { TopHeader } from '@/components/top-header'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
@@ -21,6 +21,7 @@ export function LayoutContent({
   const [isNavigating, setIsNavigating] = useState(false)
   const [showNavigationOverlay, setShowNavigationOverlay] = useState(false)
   const navigationOverlayTimerRef = useRef<number | null>(null)
+  const [navLayout, setNavLayout] = useState<'sidebar' | 'topbar'>('sidebar')
 
   const { data: settings } = useGetSettingsQuery(
     { shopId: currentShop?.id ?? '' },
@@ -120,6 +121,21 @@ export function LayoutContent({
   }, [])
 
   useEffect(() => {
+    const read = () => {
+      const saved = window.localStorage.getItem('nav_layout')
+      setNavLayout(saved === 'topbar' ? 'topbar' : 'sidebar')
+    }
+    if (typeof window === 'undefined') return
+    read()
+    window.addEventListener('nav_layout_changed', read as any)
+    window.addEventListener('storage', read)
+    return () => {
+      window.removeEventListener('nav_layout_changed', read as any)
+      window.removeEventListener('storage', read)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!user) return
     if (!currentShop) return
     if (user.role === 'admin' || user.role === 'super_admin') return
@@ -176,9 +192,18 @@ export function LayoutContent({
           </div>
         </div>
       ) : null}
-      <Sidebar />
-      <main className={`min-h-screen ${user ? 'md:ml-[var(--sidebar-width)]' : ''}`}>
+      {user ? (
+        navLayout === 'sidebar' ? (
+          <Sidebar />
+        ) : (
+          <div className="md:hidden">
+            <Sidebar />
+          </div>
+        )
+      ) : null}
+      <main className={`min-h-screen ${user && navLayout === 'sidebar' ? 'md:ml-[var(--sidebar-width)]' : ''}`}>
         <TopHeader />
+        {user && navLayout === 'topbar' ? <TopNav /> : null}
         {children}
       </main>
     </>

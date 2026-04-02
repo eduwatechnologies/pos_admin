@@ -53,6 +53,7 @@ export function TopHeader() {
   const { user, logout } = useAuth()
   const { currentShop } = useShop()
   const [billingOpen, setBillingOpen] = useState(false)
+  const [navLayout, setNavLayout] = useState<'sidebar' | 'topbar'>('sidebar')
 
   const isAuthed = Boolean(user)
   const skipBilling = !isAuthed || !currentShop
@@ -84,7 +85,21 @@ export function TopHeader() {
     setBillingOpen(true)
   }, [canPrompt, currentShop?.id])
 
+  useEffect(() => {
+    if (!user) return
+    if (typeof window === 'undefined') return
+    const saved = window.localStorage.getItem('nav_layout')
+    setNavLayout(saved === 'topbar' ? 'topbar' : 'sidebar')
+  }, [user])
+
   if (!user) return null
+
+  const setLayout = (next: 'sidebar' | 'topbar') => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem('nav_layout', next)
+    window.dispatchEvent(new Event('nav_layout_changed'))
+    setNavLayout(next)
+  }
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
@@ -157,6 +172,25 @@ export function TopHeader() {
                 <div className="text-sm font-medium">{user.name}</div>
                 <div className="text-xs text-muted-foreground truncate">{user.email}</div>
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault()
+                  setLayout('sidebar')
+                }}
+                className={navLayout === 'sidebar' ? 'font-medium' : undefined}
+              >
+                Navigation: Sidebar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault()
+                  setLayout('topbar')
+                }}
+                className={navLayout === 'topbar' ? 'font-medium' : undefined}
+              >
+                Navigation: Top bar
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {

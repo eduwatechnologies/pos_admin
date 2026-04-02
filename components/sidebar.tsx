@@ -335,3 +335,99 @@ export function Sidebar() {
     </>
   )
 }
+
+export function TopNav() {
+  const pathname = usePathname()
+  const { user } = useAuth()
+  const { currentShop } = useShop()
+  const { data: settings } = useGetSettingsQuery(
+    { shopId: currentShop?.id ?? '' },
+    { skip: !user || !currentShop }
+  )
+  if (!user) return null
+
+  const rolePermissions = settings?.rolePermissions ?? {}
+  const canUse = (key: string) => {
+    if (!user) return false
+    if (user.role === 'admin' || user.role === 'super_admin') return true
+    const roleKey = String(user.role ?? '')
+    return Boolean((rolePermissions as any)?.[roleKey]?.[key])
+  }
+
+  const groups = [
+    {
+      label: 'Main',
+      items: [{ href: '/dashboard', label: 'Dashboard', icon: BarChart3, perm: 'dashboard' }],
+    },
+    {
+      label: 'Sales',
+      items: [
+        { href: '/terminal', label: 'Terminal', icon: ShoppingCart, perm: 'terminal' },
+        { href: '/receipts', label: 'Sales', icon: Receipt, perm: 'receipts' },
+      ],
+    },
+    {
+      label: 'Insights',
+      items: [
+        { href: '/analytics', label: 'Analytics', icon: PieChart, perm: 'analytics' },
+        { href: '/reports', label: 'Reports', icon: BarChart3, perm: 'analytics' },
+      ],
+    },
+    {
+      label: 'Inventory',
+      items: [
+        { href: '/inventory', label: 'Inventory', icon: Package, perm: 'inventory' },
+        { href: '/categories', label: 'Categories', icon: Folder, perm: 'inventory' },
+        { href: '/purchases', label: 'Purchases', icon: ClipboardList, perm: 'inventory' },
+        { href: '/suppliers', label: 'Suppliers', icon: Truck, perm: 'inventory' },
+      ],
+    },
+    {
+      label: 'Finance',
+      items: [
+        { href: '/expenses', label: 'Expenses', icon: CircleDollarSign, perm: 'analytics' },
+        { href: '/supplier-bills', label: 'Supplier Bills', icon: FileText, perm: 'inventory' },
+      ],
+    },
+    {
+      label: 'People',
+      items: [
+        { href: '/customers', label: 'Customers', icon: User, perm: 'customers' },
+        { href: '/employees', label: 'Employees', icon: Users, perm: 'employees' },
+      ],
+    },
+    {
+      label: 'Admin',
+      items: [{ href: '/audit', label: 'Audit Log', icon: History, perm: 'settings' }],
+    },
+  ] as const
+
+  const isActive = (href: string) => pathname.startsWith(href)
+  const items = groups.flatMap((g) => g.items.filter((i) => (i.perm ? canUse(i.perm) : true)))
+
+  return (
+    <div className="sticky top-14 z-10 border-b border-border bg-background/80 backdrop-blur">
+      <div className="flex items-center gap-2 overflow-x-auto px-4 py-2">
+        {items.map((item) => {
+          const Icon = item.icon
+          const active = isActive(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors',
+                active
+                  ? 'bg-secondary text-secondary-foreground font-medium'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-secondary-foreground',
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
