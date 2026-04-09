@@ -6,6 +6,7 @@ export type BillingPlan = {
   currency: string
   priceMonthly: number
   isActive: boolean
+  features?: Record<string, any>
 }
 
 export type StoreSubscription = {
@@ -28,6 +29,7 @@ export const billingApi = baseApi.injectEndpoints({
               currency: String(p.currency ?? 'NGN'),
               priceMonthly: Number(p.priceMonthly ?? 0),
               isActive: p.isActive !== false,
+              features: p?.features && typeof p.features === 'object' && !Array.isArray(p.features) ? p.features : {},
             }))
           : [],
       providesTags: (_result, _err, arg) => [{ type: 'Billing' as const, id: `plans-${arg.shopId}` }],
@@ -82,4 +84,3 @@ export const {
   useInitializePaystackMutation,
   useVerifyPaystackMutation,
 } = billingApi
-

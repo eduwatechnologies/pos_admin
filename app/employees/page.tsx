@@ -20,6 +20,7 @@ import {
   useUpdateEmployeeMutation,
 } from '@/redux/api/employees-api'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
+import { useGetBillingSubscriptionQuery, useListBillingPlansQuery } from '@/redux/api/billing-api'
 
 export default function EmployeesPage() {
   const { isAuthenticated, user } = useAuth()
@@ -48,6 +49,24 @@ export default function EmployeesPage() {
     { shopId: currentShop?.id ?? '' },
     { skip: !isAuthenticated || !currentShop }
   )
+
+  const skipBilling = !isAuthenticated || !currentShop
+  const { data: subscription } = useGetBillingSubscriptionQuery({ shopId: currentShop?.id ?? '' }, { skip: skipBilling })
+  const { data: plans = [] } = useListBillingPlansQuery({ shopId: currentShop?.id ?? '' }, { skip: skipBilling })
+
+  const maxEmployees = useMemo(() => {
+    const plan = subscription?.planId ? plans.find((p) => p.id === subscription.planId) ?? null : null
+    const raw = plan?.features?.maxEmployees
+    const n = Number(raw)
+    if (!Number.isFinite(n)) return null
+    if (n < 0) return null
+    return Math.floor(n)
+  }, [plans, subscription?.planId])
+
+  const isEmployeeLimitReached = useMemo(() => {
+    if (typeof maxEmployees !== 'number') return false
+    return employees.length >= maxEmployees
+  }, [employees.length, maxEmployees])
 
   const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip: !isAuthenticated || !currentShop })
   const availableRoles = useMemo(() => {
@@ -224,17 +243,38 @@ export default function EmployeesPage() {
           </Link>
           <Button
             onClick={() => {
+              if (isEmployeeLimitReached) {
+                toast({
+                  title: 'Plan limit reached',
+                  description:
+                    typeof maxEmployees === 'number'
+                      ? `You have reached your plan limit (${employees.length}/${maxEmployees}). Upgrade to add more staff.`
+                      : 'You have reached your plan limit. Upgrade to add more staff.',
+                  variant: 'destructive',
+                })
+                router.push('/settings/system')
+                return
+              }
               setEditingEmployee(undefined)
               setModalOpen(true)
             }}
             className="gap-2"
-            disabled={!canManageEmployees || !currentShop || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting}
+            disabled={!canManageEmployees || !currentShop || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting || isEmployeeLimitReached}
           >
             <Plus className="h-4 w-4" />
             {isLoading ? 'Loading…' : 'Add Employee'}
           </Button>
         </div>
       </div>
+      {isEmployeeLimitReached ? (
+        <div className="text-sm text-muted-foreground">
+          Plan limit reached ({employees.length}/{typeof maxEmployees === 'number' ? maxEmployees : employees.length}).{' '}
+          <Link href="/settings/system" className="underline underline-offset-2">
+            Upgrade to add more staff
+          </Link>
+          .
+        </div>
+      ) : null}
 
       <EmployeesTable
         employees={employees}

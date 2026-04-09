@@ -80,6 +80,7 @@ export default function TerminalPage() {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [customerName, setCustomerName] = useState(walkInName)
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
   const [customerQuery, setCustomerQuery] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash')
@@ -93,6 +94,7 @@ export default function TerminalPage() {
   useEffect(() => {
     if (customerName.trim()) return
     setCustomerName(walkInName)
+    setSelectedCustomerId(null)
   }, [customerName, walkInName])
 
   useEffect(() => {
@@ -152,16 +154,20 @@ export default function TerminalPage() {
   const canCheckout = !!currentShop && totals.count > 0 && !isCheckingOut && checkoutStep !== 'processing'
 
   const customersByNameLower = useMemo(() => {
-    const map = new Map<string, string>()
+    const map = new Map<string, { id: string; name: string }>()
     for (const c of customers) {
+      const id = String((c as any)?.id ?? '')
       const n = String((c as any)?.name ?? '').trim()
-      if (!n) continue
-      map.set(n.toLowerCase(), n)
+      if (!id || !n) continue
+      map.set(n.toLowerCase(), { id, name: n })
     }
     return map
   }, [customers])
 
-  const customerNames = useMemo(() => Array.from(customersByNameLower.values()).sort((a, b) => a.localeCompare(b)), [customersByNameLower])
+  const customerNames = useMemo(
+    () => Array.from(customersByNameLower.values()).map((c) => c.name).sort((a, b) => a.localeCompare(b)),
+    [customersByNameLower],
+  )
 
   const addByCode = useCallback(
     (rawCode: string) => {
@@ -411,6 +417,7 @@ export default function TerminalPage() {
     setReceiptOpen(false)
     setShowReceipt(false)
     setCustomerName(walkInName)
+    setSelectedCustomerId(null)
   }
 
   const beginCheckout = () => {
@@ -425,6 +432,8 @@ export default function TerminalPage() {
 
     const trimmedCustomerName = customerName.trim()
     const finalCustomerName = trimmedCustomerName ? trimmedCustomerName : walkInName
+    const customerId =
+      finalCustomerName.toLowerCase() === walkInName.toLowerCase() ? null : selectedCustomerId ? selectedCustomerId : null
 
     const taxCents = Math.round(totals.taxAmount * 100)
     const items = Object.values(cart).map((l) => ({
@@ -439,6 +448,7 @@ export default function TerminalPage() {
         shopId: currentShop.id,
         input: {
           items,
+          customerId: customerId ?? undefined,
           customerName: finalCustomerName,
           paymentMethod: method,
           taxCents,
@@ -767,6 +777,7 @@ export default function TerminalPage() {
                               value={walkInName}
                               onSelect={() => {
                                 setCustomerName(walkInName)
+                                setSelectedCustomerId(null)
                                 setCustomerQuery('')
                                 setCustomerPickerOpen(false)
                               }}
@@ -784,7 +795,9 @@ export default function TerminalPage() {
                                 key={n}
                                 value={n}
                                 onSelect={() => {
-                                  setCustomerName(n)
+                                  const hit = customersByNameLower.get(n.toLowerCase())
+                                  setCustomerName(hit?.name ?? n)
+                                  setSelectedCustomerId(hit?.id ?? null)
                                   setCustomerQuery('')
                                   setCustomerPickerOpen(false)
                                 }}
@@ -816,6 +829,7 @@ export default function TerminalPage() {
                                       const created = await createCustomer({ shopId: currentShop.id, input: { name: q } }).unwrap()
                                       const createdName = String((created as any)?.name ?? q).trim() || q
                                       setCustomerName(createdName)
+                                      setSelectedCustomerId(String((created as any)?.id ?? '') || null)
                                       setCustomerQuery('')
                                       setCustomerPickerOpen(false)
                                       toast({ title: 'Customer created', description: createdName })

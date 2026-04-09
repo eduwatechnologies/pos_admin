@@ -1,5 +1,6 @@
 import { baseApi } from '@/redux/api/base-api'
 import type { Customer } from '@/lib/types'
+import { mapReceipt, type ApiReceipt } from '@/lib/api/mappers'
 
 function toDate(input: any) {
   const d = input ? new Date(input) : null
@@ -18,6 +19,19 @@ function mapCustomer(raw: any, shopId: string): Customer {
     createdAt: toDate(raw?.createdAt),
     shopId,
   }
+}
+
+export type CustomerActivitySummary = {
+  totalOrders: number
+  totalSpent: number
+  refundedCount: number
+  lastPurchaseAt?: Date
+}
+
+export type CustomerActivity = {
+  customer: Customer
+  receipts: ApiReceipt[]
+  summary: CustomerActivitySummary
 }
 
 export const customersApi = baseApi.injectEndpoints({
@@ -77,9 +91,34 @@ export const customersApi = baseApi.injectEndpoints({
         { type: 'Customer', id: 'LIST' },
       ],
     }),
+    getCustomerActivity: build.query<CustomerActivity, { shopId: string; customerId: string }>({
+      query: ({ shopId, customerId }) => ({
+        url: `/shops/${shopId}/customers/${customerId}/activity`,
+        method: 'GET',
+      }),
+      transformResponse: (response: any, _meta, arg) => {
+        const customer = mapCustomer(response?.customer, arg.shopId)
+        const receipts = Array.isArray(response?.receipts) ? response.receipts.map((r: any) => mapReceipt(r)) : []
+        const summaryRaw = response?.summary ?? {}
+        const last = summaryRaw?.lastPurchaseAt ? new Date(summaryRaw.lastPurchaseAt) : undefined
+        const lastPurchaseAt = last && !Number.isNaN(last.getTime()) ? last : undefined
+        return {
+          customer,
+          receipts,
+          summary: {
+            totalOrders: Number(summaryRaw?.totalOrders ?? 0),
+            totalSpent: Number(summaryRaw?.totalSpentCents ?? 0) / 100,
+            refundedCount: Number(summaryRaw?.refundedCount ?? 0),
+            lastPurchaseAt,
+          },
+        }
+      },
+      providesTags: (_result, _err, arg) => [{ type: 'Customer' as const, id: arg.customerId }],
+    }),
   }),
 })
 
 export const { useListCustomersQuery, useCreateCustomerMutation, useUpdateCustomerMutation, useDeleteCustomerMutation } =
   customersApi
 
+export const { useGetCustomerActivityQuery } = customersApi

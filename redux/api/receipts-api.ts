@@ -27,6 +27,7 @@ export const receiptsApi = baseApi.injectEndpoints({
         shopId: string
         input: {
           items: Array<{ productId: string; qty: number; name?: string; unitPriceCents?: number }>
+          customerId?: string
           customerName?: string
           paymentMethod: 'cash' | 'card' | 'transfer' | 'other' | string
           taxCents?: number
@@ -43,6 +44,7 @@ export const receiptsApi = baseApi.injectEndpoints({
             name: i.name,
             unitPriceCents: i.unitPriceCents,
           })),
+          customerId: input.customerId ? input.customerId : null,
           customerName: input.customerName ? input.customerName : null,
           paymentMethod: input.paymentMethod,
           taxCents: typeof input.taxCents === 'number' ? input.taxCents : 0,

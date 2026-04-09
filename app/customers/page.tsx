@@ -291,6 +291,15 @@ export default function CustomersPage() {
                             variant="ghost"
                             size="icon-sm"
                             className="rounded-md hover:bg-secondary"
+                            onClick={() => router.push(`/customers/${c.id}`)}
+                          >
+                            <User className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="rounded-md hover:bg-secondary"
                             onClick={() => openEdit(c)}
                             disabled={!canManageCustomers}
                           >

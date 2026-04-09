@@ -175,7 +175,7 @@ export function Sidebar() {
             <Store className="size-4" />
           </div>
           {!collapsed ? (
-            <span className="text-sidebar-accent-foreground font-semibold text-lg tracking-tight">BillScan</span>
+            <span className="text-sidebar-accent-foreground font-semibold text-lg tracking-tight">Kounter</span>
           ) : null}
         </div>
 

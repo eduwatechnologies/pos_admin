@@ -8,7 +8,7 @@
     "build": "next build",
     "build:webpack": "next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "npx -y eslint@8.57.0 ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -70,6 +70,8 @@
     "@uploadthing/react": "^7.0.0"
   },
   "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-next": "16.1.6",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/node": "^22",
     "@types/react": "19.2.14",

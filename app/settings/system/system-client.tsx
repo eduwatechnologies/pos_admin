@@ -89,8 +89,10 @@ export default function SettingsSystemClient() {
     if (!ref) return
 
     ;(async () => {
+      let ok = false
       try {
         await verifyPaystack({ shopId: currentShop.id, reference: ref }).unwrap()
+        ok = true
         toast({ title: 'Payment verified', description: 'Your subscription has been updated.' })
       } catch (err) {
         toast({
@@ -102,7 +104,7 @@ export default function SettingsSystemClient() {
           variant: 'destructive',
         })
       } finally {
-        router.replace('/settings/system')
+        router.replace(ok ? '/dashboard' : '/settings/system')
       }
     })()
   }, [currentShop, router, searchParams, toast, verifyPaystack])
