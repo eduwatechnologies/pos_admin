@@ -115,18 +115,21 @@ const PrintableReceipt = ({
         <title>Receipt</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Courier New', monospace; width: 280px; margin: 0 auto; padding: 16px 0; color: #000; }
+          body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 4mm; color: #000; background: #fff; }
           .center { text-align: center; }
           .bold { font-weight: bold; }
-          .divider { border-top: 1px dashed #999; margin: 8px 0; }
-          .row { display: flex; justify-content: space-between; font-size: 12px; line-height: 1.6; }
-          .item-name { font-size: 12px; line-height: 1.4; }
-          .item-detail { font-size: 11px; color: #666; margin-bottom: 4px; }
-          .store-name { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
-          .meta { font-size: 11px; color: #666; line-height: 1.5; }
-          .total-row { font-size: 14px; font-weight: bold; }
-          .footer { font-size: 11px; color: #666; margin-top: 12px; text-align: center; }
-          @media print { body { width: 100%; } }
+          .divider { border-top: 1px dashed #000; margin: 2mm 0; }
+          .row { display: flex; justify-content: space-between; font-size: 10pt; line-height: 1.2; margin-bottom: 1mm; }
+          .item-name { font-size: 10pt; font-weight: bold; }
+          .item-detail { font-size: 9pt; margin-bottom: 2mm; }
+          .store-name { font-size: 12pt; font-weight: bold; margin-bottom: 1mm; }
+          .meta { font-size: 9pt; line-height: 1.2; margin-bottom: 1mm; }
+          .total-row { font-size: 11pt; font-weight: bold; margin-top: 2mm; }
+          .footer { font-size: 9pt; margin-top: 4mm; text-align: center; }
+          @media print { 
+            body { width: 58mm; padding: 2mm; }
+            @page { margin: 0; }
+          }
         </style>
       </head>
       <body>
