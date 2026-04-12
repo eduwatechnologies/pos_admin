@@ -148,7 +148,7 @@ export default function StoresPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Business name (optional)</label>
-                <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. ScanSell POS" />
+                <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Kounter" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Phone (optional)</label>

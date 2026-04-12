@@ -12,7 +12,7 @@ const fontSans = Inter({ subsets: ['latin'], variable: '--font-inter', display: 
 const fontMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono', display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'POS Dashboard',
+  title: 'Kounter POS Dashboard',
   description: 'Point of Sale Management System',
   generator: 'v0.app',
   icons: {

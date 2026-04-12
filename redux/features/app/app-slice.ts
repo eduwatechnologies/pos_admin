@@ -8,7 +8,7 @@ type AppState = {
 }
 
 const initialState: AppState = {
-  businessName: 'ScanSell POS',
+  businessName: 'Kounter',
   businessLogoUrl: null,
 }
 

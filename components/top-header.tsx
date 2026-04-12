@@ -36,8 +36,8 @@ function getTitleFromPath(pathname: string) {
   if (pathname.startsWith('/analytics')) return 'Analytics'
   if (pathname.startsWith('/stores')) return 'Stores'
   if (pathname.startsWith('/settings')) return 'Settings'
-  if (pathname.startsWith('/dashboard')) return 'Dashboard'
-  return 'POS Dashboard'
+  if (pathname.startsWith('/dashboard')) return 'Kounter Dashboard'
+  return 'Kounter POS'
 }
 
 function initials(name: string) {
