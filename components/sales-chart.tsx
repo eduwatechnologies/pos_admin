@@ -1,16 +1,24 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { motion } from 'framer-motion'
 import { DailySales } from '@/lib/types'
 import { format, parseISO } from 'date-fns'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 
 interface SalesChartProps {
   data: DailySales[]
   title?: string
   subtitle?: string
 }
+
+const chartConfig = {
+  revenue: {
+    label: 'Revenue',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig
 
 export function SalesChart({ data, title = 'Sales', subtitle }: SalesChartProps) {
   const [period, setPeriod] = useState<'Week' | 'Month' | 'Year'>('Week')
@@ -98,49 +106,73 @@ export function SalesChart({ data, title = 'Sales', subtitle }: SalesChartProps)
       {chartData.length === 0 ? (
         <div className="py-12 text-center text-sm text-muted-foreground">No sales data for this period.</div>
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.22} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-            <XAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-              minTickGap={16}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-              tickFormatter={(v: any) => compactMoney.format(Number(v) || 0)}
-              width={80}
-            />
-            <Tooltip
-              contentStyle={{
-                background: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                fontSize: '13px',
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.07)',
-              }}
-              formatter={(value: any) => [money.format(Number(value) || 0), 'Revenue']}
-            />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2.5}
-              fill="url(#revenueGradient)"
-              dot={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="h-[320px] w-full pt-4">
+          <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
+            <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
+              <defs>
+                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="hsl(var(--border))" 
+                vertical={false} 
+                opacity={0.4}
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                minTickGap={20}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(v: any) => compactMoney.format(Number(v) || 0)}
+                width={65}
+                dx={-10}
+              />
+              <ChartTooltip
+                cursor={{ 
+                  stroke: 'hsl(var(--border))', 
+                  strokeWidth: 2,
+                  strokeDasharray: '5 5'
+                }}
+                content={
+                  <ChartTooltipContent
+                    indicator="line"
+                    formatter={(value: any) => [money.format(Number(value) || 0), 'Revenue']}
+                  />
+                }
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="var(--color-revenue)"
+                strokeWidth={3}
+                fill="url(#revenueGradient)"
+                dot={{ 
+                  r: 5, 
+                  fill: 'hsl(var(--background))', 
+                  strokeWidth: 2, 
+                  stroke: 'var(--color-revenue)',
+                  fillOpacity: 1
+                }}
+                activeDot={{ 
+                  r: 7, 
+                  strokeWidth: 0,
+                  fill: 'var(--color-revenue)'
+                }}
+                animationDuration={1500}
+              />
+            </AreaChart>
+          </ChartContainer>
+        </div>
       )}
     </motion.div>
   )

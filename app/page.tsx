@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { BarChart3, Folder, Package, Receipt, ShoppingCart, StoreIcon, TrendingUp, Users } from 'lucide-react'
+import { BarChart3, Folder, Package, Receipt, ShoppingCart, StoreIcon, TrendingUp, Users, DollarSign } from 'lucide-react'
 
-import { DashboardCards } from '@/components/dashboard-cards'
+import { StatCard } from '@/components/stat-card'
 import { RecentReceipts } from '@/components/recent-receipts'
 import { SalesChart } from '@/components/sales-chart'
 import { Button } from '@/components/ui/button'

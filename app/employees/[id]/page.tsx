@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEmployeeStats } from '@/lib/performance-utils'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -16,6 +16,14 @@ import { Input } from '@/components/ui/input'
 import { useListEmployeesQuery, useSetEmployeePasswordMutation } from '@/redux/api/employees-api'
 import { useListReceiptsQuery } from '@/redux/api/receipts-api'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+
+const chartConfig = {
+  sales: {
+    label: 'Sales',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig
 
 export default function EmployeeDetailPage() {
   const params = useParams()
@@ -236,22 +244,72 @@ export default function EmployeeDetailPage() {
 
       {/* Daily Sales Chart */}
       {dailySalesData.length > 0 && (
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
             <CardTitle>Daily Sales Trend</CardTitle>
             <CardDescription>Sales over the last 30 days</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={dailySalesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip formatter={(value) => money.format(Number(value) || 0)} />
-                <Legend />
-                <Line type="monotone" dataKey="sales" stroke="#0D9488" name="Sales" />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="h-[350px] w-full pt-4">
+              <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
+                <LineChart data={dailySalesData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    vertical={false} 
+                    stroke="hsl(var(--border))" 
+                    opacity={0.4}
+                  />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    minTickGap={20}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={(v) => money.format(v)}
+                    width={75}
+                    dx={-10}
+                  />
+                  <ChartTooltip
+                    cursor={{ 
+                      stroke: 'hsl(var(--border))', 
+                      strokeWidth: 2,
+                      strokeDasharray: '5 5'
+                    }}
+                    content={
+                      <ChartTooltipContent
+                        indicator="line"
+                        formatter={(value: any) => [money.format(Number(value) || 0), 'Sales']}
+                      />
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="sales"
+                    stroke="var(--color-sales)"
+                    strokeWidth={3}
+                    dot={{ 
+                      r: 5, 
+                      fill: 'hsl(var(--background))', 
+                      strokeWidth: 2, 
+                      stroke: 'var(--color-sales)',
+                      fillOpacity: 1
+                    }}
+                    activeDot={{ 
+                      r: 7, 
+                      strokeWidth: 0,
+                      fill: 'var(--color-sales)'
+                    }}
+                    animationDuration={1500}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       )}

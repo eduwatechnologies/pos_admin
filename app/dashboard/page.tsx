@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
-import { DashboardCards } from '@/components/dashboard-cards'
+import { StatCard } from '@/components/stat-card'
 import { SalesChart } from '@/components/sales-chart'
+import { CategoryDistributionChart } from '@/components/category-distribution-chart'
+import { SalesByHourChart } from '@/components/sales-by-hour-chart'
 import { RecentReceipts } from '@/components/recent-receipts'
 import { useShop } from '@/context/shop-context'
 import { DailySales, Receipt } from '@/lib/types'
@@ -16,6 +18,7 @@ import { useListCategoriesQuery } from '@/redux/api/categories-api'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DollarSign, ShoppingCart, TrendingUp, Package, Layers } from 'lucide-react'
 
 type DatePreset = 'today' | 'yesterday' | 'custom'
 
@@ -141,6 +144,33 @@ export default function Home() {
       .sort((a, b) => a.date.localeCompare(b.date))
   }, [receipts])
 
+  const categoryDistribution = useMemo(() => {
+    const byCategory = new Map<string, number>()
+    receipts.forEach((r) => {
+      r.items.forEach((item) => {
+        // Find product to get its category
+        const product = products.find((p) => p.id === item.productId)
+        const cat = product?.category || 'General'
+        byCategory.set(cat, (byCategory.get(cat) || 0) + item.subtotal)
+      })
+    })
+    return Array.from(byCategory.entries())
+      .map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }))
+      .sort((a, b) => b.value - a.value)
+  }, [products, receipts])
+
+  const hourlySales = useMemo(() => {
+    const byHour = new Map<number, number>()
+    receipts.forEach((r) => {
+      const hour = new Date(r.date).getHours()
+      byHour.set(hour, (byHour.get(hour) || 0) + r.total)
+    })
+    return Array.from(byHour.entries()).map(([hour, sales]) => ({
+      hour,
+      sales: Math.round(sales * 100) / 100,
+    }))
+  }, [receipts])
+
   if (!isAuthenticated) {
     return null
   }
@@ -184,39 +214,73 @@ export default function Home() {
         </div>
       </div>
 
-      <DashboardCards
-        totalSales={stats.totalSales}
-        totalTransactions={stats.totalTransactions}
-        averageOrderValue={stats.averageOrderValue}
-        lowStockProducts={stats.lowStockProducts}
-      />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Revenue"
+          value={money.format(stats.totalSales)}
+          icon={DollarSign}
+          description="Total sales in this period"
+          trend={{ value: 12, label: 'from last period', isPositive: true }}
+        />
+        <StatCard
+          title="Transactions"
+          value={stats.totalTransactions}
+          icon={ShoppingCart}
+          description="Completed orders"
+          trend={{ value: 8, label: 'from last period', isPositive: true }}
+        />
+        <StatCard
+          title="Avg Order Value"
+          value={money.format(stats.averageOrderValue)}
+          icon={TrendingUp}
+          description="Average spent per order"
+          trend={{ value: 2, label: 'from last period', isPositive: false }}
+        />
+        <StatCard
+          title="Low Stock"
+          value={stats.lowStockProducts}
+          icon={Package}
+          description="Products needing restock"
+          iconClassName="bg-amber-500/10"
+        />
+      </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-center">
+        <div className="lg:col-span-2 space-y-6">
           <SalesChart data={salesTrend} title="Revenue Overview" subtitle={rangeLabel} />
+          
         </div>
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Top Selling Products</CardTitle>
-            <span className="text-xs text-muted-foreground">Top 5</span>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {bestSellers.length === 0 ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">No sales yet for this period.</div>
-            ) : (
-              bestSellers.slice(0, 5).map((p, idx) => (
-                <div key={`${p.name}-${idx}`} className="flex items-center gap-3">
-                  <div className="w-7 text-xs font-mono text-muted-foreground">{String(idx + 1).padStart(2, '0')}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-card-foreground truncate">{p.name}</div>
-                    <div className="text-xs text-muted-foreground">{p.qty} sold</div>
-                  </div>
-                  <div className="text-sm font-semibold text-card-foreground tabular-nums">{money.format(p.revenue)}</div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          
+          <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold">Top Selling Products</CardTitle>
+              <Layers className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="space-y-4">
+                {bestSellers.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">No sales yet for this period.</div>
+                ) : (
+                  bestSellers.slice(0, 5).map((p, idx) => (
+                    <div key={`${p.name}-${idx}`} className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-card-foreground truncate">{p.name}</div>
+                        <div className="text-[11px] text-muted-foreground">{p.qty} units sold</div>
+                      </div>
+                      <div className="text-sm font-semibold text-card-foreground tabular-nums">
+                        {money.format(p.revenue)}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <RecentReceipts receipts={recentReceipts} />

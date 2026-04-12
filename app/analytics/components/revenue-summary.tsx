@@ -1,10 +1,10 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Users, ShoppingCart, DollarSign } from 'lucide-react'
 import { useShop } from '@/context/shop-context'
 import { useRevenueQuery } from '@/redux/api/analytics-api'
+import { StatCard } from '@/components/stat-card'
 
 export function RevenueSummary() {
   const { currentShop } = useShop()
@@ -94,21 +94,16 @@ export function RevenueSummary() {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {summaryCards.map(card => {
-        const Icon = card.icon
-        return (
-          <Card key={card.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-              <Icon className={`h-4 w-4 ${card.color}`} />
-            </CardHeader>
-            <CardContent className="space-y-1">
-              <div className="text-2xl font-bold">{card.value}</div>
-              <p className="text-xs text-muted-foreground">{card.subtitle}</p>
-            </CardContent>
-          </Card>
-        )
-      })}
+      {summaryCards.map((card) => (
+        <StatCard
+          key={card.title}
+          title={card.title}
+          value={card.value}
+          icon={card.icon}
+          description={card.subtitle}
+          iconClassName={card.color.replace('text-', 'bg-').replace('-600', '-600/10')}
+        />
+      ))}
     </div>
   )
 }

@@ -8,14 +8,20 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from 'recharts'
 import { DailySales } from '@/lib/types'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 
 interface SalesByPeriodProps {
   data: DailySales[]
 }
+
+const chartConfig = {
+  sales: {
+    label: 'Revenue',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig
 
 export function SalesByPeriod({ data }: SalesByPeriodProps) {
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
@@ -80,28 +86,66 @@ export function SalesByPeriod({ data }: SalesByPeriodProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" stroke="currentColor" style={{ fontSize: '0.875rem' }} />
-            <YAxis stroke="currentColor" style={{ fontSize: '0.875rem' }} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'var(--background)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius)',
-              }}
-              formatter={(value: any) => money.format(Number(value) || 0)}
-            />
-            <Line
-              type="monotone"
-              dataKey="sales"
-              stroke="hsl(var(--primary))"
-              dot={false}
-              strokeWidth={2}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="h-[400px] w-full pt-4">
+          <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
+            <LineChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                vertical={false} 
+                stroke="hsl(var(--border))" 
+                opacity={0.4}
+              />
+              <XAxis 
+                dataKey="date" 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                minTickGap={20}
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(v) => money.format(v)}
+                width={75}
+                dx={-10}
+              />
+              <ChartTooltip
+                cursor={{ 
+                  stroke: 'hsl(var(--border))', 
+                  strokeWidth: 2,
+                  strokeDasharray: '5 5'
+                }}
+                content={
+                  <ChartTooltipContent
+                    indicator="line"
+                    formatter={(value: any) => [money.format(Number(value) || 0), 'Revenue']}
+                  />
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="sales"
+                stroke="var(--color-sales)"
+                strokeWidth={3}
+                dot={{ 
+                  r: 5, 
+                  fill: 'hsl(var(--background))', 
+                  strokeWidth: 2, 
+                  stroke: 'var(--color-sales)',
+                  fillOpacity: 1
+                }}
+                activeDot={{ 
+                  r: 7, 
+                  strokeWidth: 0,
+                  fill: 'var(--color-sales)'
+                }}
+                animationDuration={1500}
+              />
+            </LineChart>
+          </ChartContainer>
+        </div>
       </CardContent>
     </Card>
   )

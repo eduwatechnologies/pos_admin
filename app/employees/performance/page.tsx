@@ -3,12 +3,24 @@
 import { useEffect, useMemo } from 'react'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import { EmployeePerformance } from '@/lib/types'
 import { useEmployeePerformanceQuery } from '@/redux/api/analytics-api'
 import { useListEmployeesQuery } from '@/redux/api/employees-api'
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@/components/ui/chart'
+
+const chartConfig = {
+  sales: {
+    label: 'Sales',
+    color: 'hsl(var(--primary))',
+  },
+  commission: {
+    label: 'Commission (5%)',
+    color: 'hsl(var(--chart-2))',
+  },
+} satisfies ChartConfig
 
 export default function PerformancePage() {
   const { isAuthenticated } = useAuth()
@@ -116,23 +128,71 @@ export default function PerformancePage() {
       </div>
 
       {/* Sales Chart */}
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="pb-2">
           <CardTitle>Sales by Employee</CardTitle>
           <CardDescription>Total sales and commission earnings</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip formatter={(value) => money.format(Number(value) || 0)} />
-              <Legend />
-              <Bar dataKey="sales" fill="#0D9488" name="Sales" />
-              <Bar dataKey="commission" fill="#F97316" name="Commission (5%)" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="h-[400px] w-full pt-6">
+            <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
+              <BarChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: 60 }}>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  vertical={false} 
+                  stroke="hsl(var(--border))" 
+                  opacity={0.4}
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  angle={-45}
+                  textAnchor="end"
+                  interval={0}
+                  dy={15}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tickFormatter={(v) => money.format(v)}
+                  width={75}
+                  dx={-10}
+                />
+                <ChartTooltip
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
+                  content={
+                    <ChartTooltipContent
+                      indicator="dot"
+                      formatter={(value: any, name: any) => [
+                        money.format(Number(value) || 0),
+                        name === 'sales' ? 'Total Sales' : 'Commission (5%)'
+                      ]}
+                    />
+                  }
+                />
+                <ChartLegend content={<ChartLegendContent />} className="mt-8" />
+                <Bar 
+                  dataKey="sales" 
+                  fill="var(--color-sales)" 
+                  radius={[6, 6, 0, 0]} 
+                  fillOpacity={0.9}
+                  barSize={32}
+                  className="transition-all duration-300 hover:fill-opacity-100"
+                />
+                <Bar 
+                  dataKey="commission" 
+                  fill="var(--color-commission)" 
+                  radius={[6, 6, 0, 0]} 
+                  fillOpacity={0.9}
+                  barSize={32}
+                  className="transition-all duration-300 hover:fill-opacity-100"
+                />
+              </BarChart>
+            </ChartContainer>
+          </div>
         </CardContent>
       </Card>
 
