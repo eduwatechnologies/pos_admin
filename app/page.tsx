@@ -8,6 +8,7 @@ import { BarChart3, Folder, Package, Receipt, ShoppingCart, StoreIcon, TrendingU
 import { StatCard } from '@/components/stat-card'
 import { RecentReceipts } from '@/components/recent-receipts'
 import { SalesChart } from '@/components/sales-chart'
+import { DashboardCards } from '@/components/dashboard-cards'
 import { Button } from '@/components/ui/button'
 import type { DailySales, Receipt } from '@/lib/types'
 import { useAuth } from '@/context/auth-context'
