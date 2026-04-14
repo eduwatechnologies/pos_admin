@@ -3,67 +3,10 @@
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { BarChart3, Folder, Package, Receipt, ShoppingCart, StoreIcon, TrendingUp, Users, DollarSign } from 'lucide-react'
+import { BarChart3, Package, Receipt, ShoppingCart, StoreIcon, TrendingUp, Users, ArrowRight, CheckCircle2, Zap, Shield, Smartphone } from 'lucide-react'
 
-import { StatCard } from '@/components/stat-card'
-import { RecentReceipts } from '@/components/recent-receipts'
-import { SalesChart } from '@/components/sales-chart'
-import { DashboardCards } from '@/components/dashboard-cards'
 import { Button } from '@/components/ui/button'
-import type { DailySales, Receipt } from '@/lib/types'
 import { useAuth } from '@/context/auth-context'
-
-const demoSales: DailySales[] = [
-  { date: '2026-03-28', sales: 125000, transactions: 28 },
-  { date: '2026-03-29', sales: 98000, transactions: 21 },
-  { date: '2026-03-30', sales: 141500, transactions: 33 },
-  { date: '2026-03-31', sales: 162000, transactions: 37 },
-  { date: '2026-04-01', sales: 154500, transactions: 35 },
-  { date: '2026-04-02', sales: 189000, transactions: 41 },
-  { date: '2026-04-03', sales: 173000, transactions: 39 },
-]
-
-const demoReceipts: Receipt[] = [
-  {
-    id: 'RCP-1042',
-    date: new Date('2026-04-03T09:41:00.000Z'),
-    customerName: 'Walk-in',
-    items: [
-      { productId: 'p1', productName: 'Milo Sachet', quantity: 2, unitPrice: 250, subtotal: 500 },
-      { productId: 'p2', productName: 'Peak Milk', quantity: 1, unitPrice: 1200, subtotal: 1200 },
-    ],
-    subtotal: 1700,
-    tax: 0,
-    total: 1700,
-    paymentMethod: 'cash',
-    cashierId: 'u1',
-    cashierName: 'Amina',
-  },
-  {
-    id: 'RCP-1041',
-    date: new Date('2026-04-03T08:55:00.000Z'),
-    customerName: 'Chinedu',
-    items: [{ productId: 'p3', productName: 'Detergent', quantity: 1, unitPrice: 3500, subtotal: 3500 }],
-    subtotal: 3500,
-    tax: 0,
-    total: 3500,
-    paymentMethod: 'transfer',
-    cashierId: 'u2',
-    cashierName: 'Sodiq',
-  },
-  {
-    id: 'RCP-1039',
-    date: new Date('2026-04-02T18:10:00.000Z'),
-    customerName: 'Walk-in',
-    items: [{ productId: 'p4', productName: 'Bread', quantity: 3, unitPrice: 900, subtotal: 2700 }],
-    subtotal: 2700,
-    tax: 0,
-    total: 2700,
-    paymentMethod: 'card',
-    cashierId: 'u1',
-    cashierName: 'Amina',
-  },
-]
 
 export default function Home() {
   const { isAuthenticated } = useAuth()
@@ -77,301 +20,215 @@ export default function Home() {
   if (isAuthenticated) return null
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="inline-flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <div className="inline-flex size-10 items-center justify-center rounded-xl bg-teal-600 text-white shadow-lg shadow-teal-600/25">
               <StoreIcon className="size-5" />
-            </span>
-            <div className="text-sm font-semibold text-foreground">Kounter POS</div>
+            </div>
+            <span className="text-xl font-bold text-slate-900">Kounter</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="h-9 px-3">
-              <Link href="/auth/login">Login</Link>
+          <div className="flex items-center gap-3">
+            <Button asChild variant="ghost" className="h-10 px-4 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+              <Link href="/auth/login">Sign in</Link>
             </Button>
-            <Button asChild className="h-9 px-4">
-              <Link href="/auth/register">Create account</Link>
+            <Button asChild className="h-10 px-5 bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-600/25">
+              <Link href="/auth/register">Get Started</Link>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="px-4 py-12 md:px-8">
-        <div className="mx-auto w-full max-w-6xl">
-          <section className="mx-auto max-w-3xl space-y-6 text-center">
-            <div className="inline-flex items-center justify-center rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
-              Sales • Inventory • Receipts • Staff
+      <section className="relative overflow-hidden bg-gradient-to-b from-white to-slate-100 pt-20 pb-24 sm:pt-28 sm:pb-32">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC40Ij48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-60" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-teal-600/10 rounded-full blur-3xl -translate-y-1/2" />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-1.5 text-sm text-teal-700">
+              <Zap className="size-4" />
+              <span>Point of Sale made simple</span>
             </div>
-            <div className="space-y-3">
-              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Kounter POS Dashboard</h1>
-              <p className="text-base text-muted-foreground md:text-lg">
-                Run your store in one place. Track sales, manage inventory, print receipts, and monitor staff performance — fast.
-              </p>
-            </div>
-            <div className="flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild className="h-11 px-6">
-                <Link href="/auth/register">Start free trial</Link>
+
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+              Run your store with{' '}
+              <span className="bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">confidence</span>
+            </h1>
+
+            <p className="mt-6 text-lg text-slate-600 sm:text-xl sm:leading-8 max-w-2xl mx-auto">
+              Kounter helps you sell faster, track inventory in real-time, and understand your business with clear insights — all in one place.
+            </p>
+
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Button asChild size="lg" className="h-12 px-8 text-base bg-teal-600 hover:bg-teal-700 shadow-xl shadow-teal-600/30 rounded-xl font-semibold">
+                <Link href="/auth/register">
+                  Start free trial
+                  <ArrowRight className="size-5 ml-2" />
+                </Link>
               </Button>
-              <Button asChild variant="outline" className="h-11 px-6">
-                <Link href="/auth/login">Go to login</Link>
-              </Button>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-border bg-card p-4 text-left">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-                    <ShoppingCart className="size-4" />
-                  </span>
-                  <div className="text-sm font-medium text-card-foreground">Fast checkout</div>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">Barcode scan + quick cart</div>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4 text-left">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex size-9 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
-                    <Package className="size-4" />
-                  </span>
-                  <div className="text-sm font-medium text-card-foreground">Inventory control</div>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">Low stock alerts + purchases</div>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4 text-left">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex size-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600">
-                    <TrendingUp className="size-4" />
-                  </span>
-                  <div className="text-sm font-medium text-card-foreground">Insights</div>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">Sales trends + best sellers</div>
-              </div>
-            </div>
-          </section>
-
-          <div className="mt-16 space-y-16">
-            <section className="space-y-6">
-              <div className="rounded-2xl border border-border bg-background shadow-sm">
-                <div className="border-b border-border px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="size-4 text-muted-foreground" />
-                    <div className="text-sm font-semibold">Dashboard preview</div>
-                  </div>
-                  <div className="mt-1 text-sm text-muted-foreground">Example view of your store performance.</div>
-                </div>
-                <div className="space-y-5 p-5">
-                  <DashboardCards
-                    totalSales={demoSales.reduce((a, b) => a + b.sales, 0)}
-                    totalTransactions={234}
-                    averageOrderValue={4200}
-                    lowStockProducts={8}
-                  />
-                  <div className="grid gap-5 lg:grid-cols-5">
-                    <div className="lg:col-span-3">
-                      <SalesChart data={demoSales} title="Sales" subtitle="Weekly sales performance" />
-                    </div>
-                    <div className="lg:col-span-2">
-                      <RecentReceipts receipts={demoReceipts} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="space-y-6">
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Features</div>
-                <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Everything you need to run daily operations</h2>
-                <p className="text-sm text-muted-foreground md:text-base">
-                  Built for fast checkout, accurate stock, and clear visibility into performance.
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-                      <ShoppingCart className="size-4" />
-                    </span>
-                    <div className="text-sm font-semibold text-card-foreground">POS Terminal</div>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">Scan products, apply tax, take cash/card/transfer.</div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex size-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
-                      <Package className="size-4" />
-                    </span>
-                    <div className="text-sm font-semibold text-card-foreground">Inventory & Categories</div>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">Track quantities, reorder levels, and product pricing.</div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex size-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600">
-                      <Receipt className="size-4" />
-                    </span>
-                    <div className="text-sm font-semibold text-card-foreground">Receipts</div>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">Print receipts, view history, and handle refunds.</div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex size-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600">
-                      <Users className="size-4" />
-                    </span>
-                    <div className="text-sm font-semibold text-card-foreground">Customers</div>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">Keep customer records and improve repeat sales.</div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex size-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600">
-                      <Users className="size-4" />
-                    </span>
-                    <div className="text-sm font-semibold text-card-foreground">Employees</div>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">Create staff accounts, roles, and performance overview.</div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex size-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-                      <BarChart3 className="size-4" />
-                    </span>
-                    <div className="text-sm font-semibold text-card-foreground">Reports & Analytics</div>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">Understand trends, best sellers, and daily performance.</div>
-                </div>
-              </div>
-            </section>
-
-          <section className="grid gap-8 rounded-2xl border border-border bg-muted/30 p-6 md:grid-cols-3 md:items-center md:p-10">
-            <div className="md:col-span-1">
-              <div className="text-sm font-medium text-muted-foreground">How it works</div>
-              <div className="mt-2 text-2xl font-semibold tracking-tight">Start selling in minutes</div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                Create your store, add products, then begin checkout on the terminal.
-              </div>
-            </div>
-            <div className="grid gap-4 md:col-span-2 md:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-background p-5">
-                <div className="flex items-center gap-2">
-                  <StoreIcon className="size-4 text-muted-foreground" />
-                  <div className="text-sm font-semibold">1. Create store</div>
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">Sign up and setup your shop profile.</div>
-              </div>
-              <div className="rounded-2xl border border-border bg-background p-5">
-                <div className="flex items-center gap-2">
-                  <Package className="size-4 text-muted-foreground" />
-                  <div className="text-sm font-semibold">2. Add inventory</div>
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">Products, categories, stock and prices.</div>
-              </div>
-              <div className="rounded-2xl border border-border bg-background p-5">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="size-4 text-muted-foreground" />
-                  <div className="text-sm font-semibold">3. Start checkout</div>
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">Scan items, take payment, print receipt.</div>
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-6">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-muted-foreground">Pricing</div>
-              <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Simple plans that scale with you</h2>
-              <p className="text-sm text-muted-foreground md:text-base">Start small and upgrade when you need more terminals and staff.</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <div className="text-sm font-semibold">Starter</div>
-                <div className="mt-2 text-3xl font-semibold">₦3,000</div>
-                <div className="mt-1 text-sm text-muted-foreground">Best for single counter shops.</div>
-                <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <div>1 terminal</div>
-                  <div>2 staff</div>
-                  <div>Basic reports</div>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-6 ring-1 ring-primary/20">
-                <div className="text-sm font-semibold">Growth</div>
-                <div className="mt-2 text-3xl font-semibold">₦5,000</div>
-                <div className="mt-1 text-sm text-muted-foreground">Most popular for busy stores.</div>
-                <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <div>2 terminals</div>
-                  <div>6 staff</div>
-                  <div>Advanced reports</div>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <div className="text-sm font-semibold">Pro</div>
-                <div className="mt-2 text-3xl font-semibold">₦10,000</div>
-                <div className="mt-1 text-sm text-muted-foreground">For multi-branch businesses.</div>
-                <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                  <div>Up to 5 terminals</div>
-                  <div>Up to 15 staff</div>
-                  <div>Priority support</div>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild className="h-11 px-6">
-                <Link href="/auth/register">Start free trial</Link>
-              </Button>
-              <Button asChild variant="outline" className="h-11 px-6">
-                <Link href="/auth/login">Go to login</Link>
+              <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base rounded-xl font-semibold border-slate-300 hover:border-slate-400 hover:bg-slate-50">
+                <Link href="/auth/login">Sign in</Link>
               </Button>
             </div>
-          </section>
 
-          <section className="space-y-6">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-muted-foreground">FAQ</div>
-              <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Common questions</h2>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <div className="text-sm font-semibold">Can I add more staff later?</div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Yes. Upgrade your plan anytime to increase your staff and terminal limits.
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <div className="text-sm font-semibold">Do you support cash and transfers?</div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Yes. You can record cash, card, and bank transfer sales from the terminal.
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <div className="text-sm font-semibold">Can I track low stock?</div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Yes. Set reorder levels per product and see low stock alerts on the dashboard.
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <div className="text-sm font-semibold">Is my data safe?</div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Your account is protected with authentication, and access can be controlled per role.
-                </div>
-              </div>
-            </div>
-          </section>
+            <p className="mt-4 text-sm text-slate-500">No credit card required · Free 14-day trial</p>
+          </div>
 
-          <footer className="border-t border-border py-10 text-sm text-muted-foreground">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2">
-                <StoreIcon className="size-4" />
-                <div>Kounter POS</div>
+          <div className="mt-20 flex flex-col items-center justify-center gap-8">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 max-w-3xl">
+              <div className="rounded-2xl border border-slate-200/60 bg-white p-6 text-center shadow-lg shadow-slate-200/30 hover:shadow-xl hover:shadow-slate-200/40 transition-all hover:-translate-y-1">
+                <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 mb-4">
+                  <ShoppingCart className="size-7" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Fast Checkout</h3>
+                <p className="mt-2 text-sm text-slate-600">Complete sales in seconds with barcode scanning and quick cart.</p>
               </div>
-              <div className="flex items-center gap-4">
-                <Link href="/auth/login" className="hover:text-foreground">Login</Link>
-                <Link href="/auth/register" className="hover:text-foreground">Create account</Link>
+              <div className="rounded-2xl border border-slate-200/60 bg-white p-6 text-center shadow-lg shadow-slate-200/30 hover:shadow-xl hover:shadow-slate-200/40 transition-all hover:-translate-y-1">
+                <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-teal-100 text-teal-600 mb-4">
+                  <Package className="size-7" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Smart Inventory</h3>
+                <p className="mt-2 text-sm text-slate-600">Track stock automatically and get low stock alerts instantly.</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/60 bg-white p-6 text-center shadow-lg shadow-slate-200/30 hover:shadow-xl hover:shadow-slate-200/40 transition-all hover:-translate-y-1">
+                <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-green-100 text-green-600 mb-4">
+                  <BarChart3 className="size-7" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Sales Insights</h3>
+                <p className="mt-2 text-sm text-slate-600">Understand trends, best sellers, and grow your business.</p>
               </div>
             </div>
-          </footer>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="bg-white py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Everything you need to sell more</h2>
+            <p className="mt-4 text-lg text-slate-600">Powerful features that help your business grow faster.</p>
+          </div>
+
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { icon: ShoppingCart, color: 'orange', title: 'Fast POS Terminal', desc: 'Scan barcodes, apply discounts, take any payment type. Complete sales in seconds.' },
+              { icon: Package, color: 'teal', title: 'Smart Inventory', desc: 'Track stock levels automatically. Get alerts when items are running low.' },
+              { icon: Receipt, color: 'green', title: 'Digital Receipts', desc: 'Send receipts via SMS or email. Never lose a sale record.' },
+              { icon: Users, color: 'purple', title: 'Customer Management', desc: 'Build customer profiles and track purchase history for repeat sales.' },
+              { icon: BarChart3, color: 'rose', title: 'Sales Analytics', desc: 'Understand your best sellers, peak hours, and growth trends.' },
+              { icon: Shield, color: 'cyan', title: 'Staff Access Control', desc: 'Create roles for cashiers and managers. Track every action.' },
+            ].map(({ icon: Icon, color, title, desc }) => (
+              <div key={title} className="group rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50">
+                <div className={`inline-flex size-12 items-center justify-center rounded-xl bg-${color}-100 text-${color}-600 mb-4 group-hover:scale-110 transition-transform`}>
+                  <Icon className="size-6" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+                <p className="mt-2 text-slate-600">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-gradient-to-br from-teal-600 via-teal-700 to-emerald-800 py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl" />
+
+        <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Ready to transform your store?</h2>
+          <p className="mt-4 text-lg text-teal-100 max-w-2xl mx-auto">
+            Join thousands of businesses already using Kounter to sell faster and manage their business better.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button asChild size="lg" className="h-12 px-8 text-base bg-white text-teal-700 hover:bg-teal-50 shadow-xl rounded-xl font-semibold">
+              <Link href="/auth/register">
+                Start free trial
+                <ArrowRight className="size-5 ml-2" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base border-white/30 text-white hover:bg-white/10 hover:border-white/50 rounded-xl font-semibold">
+              <Link href="/auth/login">Sign in to your account</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <h3 className="text-2xl font-bold tracking-tight text-slate-900">Frequently asked questions</h3>
+              <p className="mt-3 text-slate-600">Everything you need to know about Kounter.</p>
+
+              <div className="mt-8 space-y-6">
+                {[
+                  { q: 'How do I get started?', a: 'Sign up for a free account, create your shop, add your products, and you are ready to start selling.' },
+                  { q: 'Can I use Kounter on mobile?', a: 'Yes. Kounter works on any device with a browser — desktop, tablet, or smartphone.' },
+                  { q: 'What payment methods are supported?', a: 'You can record cash, card, and bank transfer sales from the POS terminal.' },
+                ].map(({ q, a }) => (
+                  <div key={q} className="border-b border-slate-200 pb-6">
+                    <div className="text-base font-semibold text-slate-900">{q}</div>
+                    <div className="mt-2 text-sm text-slate-600">{a}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+              <h3 className="text-lg font-semibold text-slate-900">Why businesses love Kounter</h3>
+              <div className="mt-6 space-y-4">
+                {[
+                  'Saves 2+ hours daily on inventory',
+                  'Reduces billing errors to zero',
+                  'Instant stock alerts prevent outages',
+                  'Receipts reach customers in seconds',
+                ].map((text) => (
+                  <div key={text} className="flex items-start gap-3">
+                    <div className="mt-0.5 inline-flex size-5 items-center justify-center rounded-full bg-green-100">
+                      <CheckCircle2 className="size-3 text-green-600" />
+                    </div>
+                    <span className="text-sm text-slate-700">{text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 rounded-xl bg-teal-50 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-full bg-teal-100 flex items-center justify-center">
+                    <Smartphone className="size-5 text-teal-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">Try Kounter on any device</div>
+                    <div className="text-xs text-slate-600">Works on desktop, tablet, and mobile</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-slate-200 bg-white py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+            <div className="flex items-center gap-3">
+              <div className="inline-flex size-9 items-center justify-center rounded-lg bg-teal-600 text-white">
+                <StoreIcon className="size-4" />
+              </div>
+              <span className="text-base font-bold text-slate-900">Kounter</span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-slate-500">
+              <Link href="/auth/login" className="hover:text-slate-900">Sign in</Link>
+              <Link href="/auth/register" className="hover:text-slate-900">Create account</Link>
+            </div>
+            <div className="text-sm text-slate-400">
+              &copy; {new Date().getFullYear()} Kounter POS. All rights reserved.
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

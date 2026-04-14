@@ -101,6 +101,8 @@ export function TopHeader() {
     setNavLayout(next)
   }
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
       <div className="flex h-14 items-center justify-between gap-4 px-4 pl-16 md:pl-6">
@@ -110,7 +112,7 @@ export function TopHeader() {
         </div>
 
         <div className="flex items-center gap-2">
-          <ShopSwitcherInline />
+          {isAdmin && <ShopSwitcherInline />}
           {currentShop ? (
             <button
               type="button"

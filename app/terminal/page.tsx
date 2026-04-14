@@ -17,6 +17,8 @@ import {
   ShoppingBag,
   Smartphone,
   Trash2,
+  Wifi,
+  WifiOff,
   X,
 } from 'lucide-react'
 
@@ -46,6 +48,9 @@ import { useListProductsQuery } from '@/redux/api/products-api'
 import { useCreateReceiptMutation } from '@/redux/api/receipts-api'
 import { useCreateCustomerMutation, useListCustomersQuery } from '@/redux/api/customers-api'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
+import { useOfflineReceipt } from '@/lib/offline-hooks'
+import { useSync } from '@/context/sync-context'
+import { db } from '@/lib/db'
 
 type CartLine = {
   productId: string
@@ -70,6 +75,9 @@ export default function TerminalPage() {
   const { toast } = useToast()
   const { isAuthenticated, user } = useAuth()
   const { currentShop } = useShop()
+  const { isOnline } = useSync()
+
+  const { saveReceiptLocally } = useOfflineReceipt()
 
   const walkInName = 'Walk-in'
 
@@ -373,21 +381,51 @@ export default function TerminalPage() {
       qty: l.qty,
       name: l.name,
       unitPriceCents: Math.round(l.unitPrice * 100),
+      lineTotalCents: Math.round(l.unitPrice * 100) * l.qty,
     }))
 
     try {
-      const receipt = await createReceipt({
+      const receiptId = await saveReceiptLocally({
         shopId: currentShop.id,
-        input: {
-          items,
-          customerId: customerId ?? undefined,
-          customerName: finalCustomerName,
-          paymentMethod: method,
-          taxCents,
-        },
-      }).unwrap()
+        items,
+        subtotalCents: Math.round(totals.subtotal * 100),
+        taxCents,
+        discountCents: 0,
+        totalCents: Math.round(totals.total * 100),
+        paymentMethod: method,
+        customerId,
+        customerName: finalCustomerName,
+        cashierUserId: user?.sub || null,
+        source: 'pos',
+      })
 
-      setLastReceipt(receipt)
+      const localReceipt = await db.receipts.get(receiptId)
+
+      setLastReceipt({
+        id: receiptId,
+        localId: receiptId,
+        shopId: currentShop.id,
+        items: items.map(i => ({
+          productId: i.productId,
+          name: i.name,
+          quantity: i.qty,
+          unitPrice: i.unitPriceCents / 100,
+          lineTotal: i.lineTotalCents / 100,
+        })),
+        subtotal: totals.subtotal,
+        tax: totals.taxAmount,
+        discount: 0,
+        total: totals.total,
+        paymentMethod: method,
+        customerId,
+        customerName: finalCustomerName,
+        cashierId: user?.sub || null,
+        cashierName: user?.name || null,
+        status: 'completed',
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString(),
+        source: 'pos',
+      } as any)
       setReceiptOpen(false)
       setCheckoutStep('complete')
       setCustomerName(walkInName)
@@ -395,7 +433,7 @@ export default function TerminalPage() {
 
       toast({
         title: 'Sale completed',
-        description: `Receipt ${receipt.id} • ${formatMoney(receipt.total)}`,
+        description: isOnline ? `Receipt ${receiptId.slice(-8).toUpperCase()} • ${formatMoney(totals.total)}` : `Offline sale saved • Will sync when online`,
       })
     } catch (err) {
       setCheckoutStep('payment')
