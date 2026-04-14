@@ -12,6 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Receipt } from '@/lib/types'
 import { Eye, Printer, Share2, Search } from 'lucide-react'
 
@@ -29,7 +30,7 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
 
   const filteredReceipts = useMemo(() => {
     return receipts.filter(r => {
-      const matchesSearch = 
+      const matchesSearch =
         r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (r.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
       const matchesPayment = paymentFilter === 'all' || r.paymentMethod === paymentFilter
@@ -38,6 +39,34 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
   }, [receipts, searchTerm, paymentFilter])
 
   const paymentMethods = ['all', ...Array.from(new Set(receipts.map(r => r.paymentMethod)))]
+
+  const getStatusBadge = (status: string | undefined) => {
+    const s = String(status ?? 'completed').toLowerCase()
+    if (s === 'completed' || s === 'paid') {
+      return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{s}</Badge>
+    }
+    if (s === 'refunded') {
+      return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">{s}</Badge>
+    }
+    if (s === 'pending') {
+      return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">{s}</Badge>
+    }
+    return <Badge variant="outline">{s}</Badge>
+  }
+
+  const getPaymentBadge = (method: string) => {
+    const m = method.toLowerCase()
+    if (m === 'cash') {
+      return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Cash</Badge>
+    }
+    if (m === 'transfer') {
+      return <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">Transfer</Badge>
+    }
+    if (m === 'card') {
+      return <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100">Card</Badge>
+    }
+    return <Badge variant="outline">{method}</Badge>
+  }
 
   return (
     <div className="space-y-4">
@@ -90,18 +119,18 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
               </TableHeader>
               <TableBody>
                 {filteredReceipts.map(receipt => (
-                  <TableRow key={receipt.id}>
-                    <TableCell className="font-mono text-sm">{receipt.id}</TableCell>
-                    <TableCell className="text-sm">
-                      {receipt.date.toLocaleDateString()} {receipt.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <TableRow key={receipt.id} className="hover:bg-muted/50">
+                    <TableCell className="font-mono text-xs text-muted-foreground">{receipt.id.slice(-8).toUpperCase()}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(receipt.date).toLocaleDateString()} {new Date(receipt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </TableCell>
-                    <TableCell className="text-sm">{receipt.customerName || 'N/A'}</TableCell>
-                    <TableCell className="text-sm">{receipt.cashierName || 'N/A'}</TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-sm font-medium">{receipt.customerName || 'Guest'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{receipt.cashierName || 'N/A'}</TableCell>
+                    <TableCell className="text-right font-bold text-primary tabular-nums">
                       {money.format(receipt.total)}
                     </TableCell>
-                    <TableCell className="text-sm capitalize">{String(receipt.status ?? 'paid')}</TableCell>
-                    <TableCell className="text-sm capitalize">{receipt.paymentMethod}</TableCell>
+                    <TableCell>{getStatusBadge(receipt.status)}</TableCell>
+                    <TableCell>{getPaymentBadge(receipt.paymentMethod)}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-1">
                         <Button

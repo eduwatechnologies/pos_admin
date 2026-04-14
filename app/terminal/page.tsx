@@ -629,50 +629,57 @@ export default function TerminalPage() {
                   Object.values(cart).map((item) => (
                     <div
                       key={item.productId}
-                      className="flex items-center gap-3 py-2.5 border-b border-border last:border-0"
+                      className="flex items-start gap-3 py-2.5 border-b border-border last:border-0"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center">
                         {item.imageUrl ? (
-                          <Image src={item.imageUrl} alt={item.name} width={36} height={36} className="w-full h-full object-cover" />
+                          <Image src={item.imageUrl} alt={item.name} width={44} height={44} className="w-full h-full object-cover" />
                         ) : (
-                          <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                          <ShoppingBag className="w-5 h-5 text-muted-foreground" />
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 space-y-1">
                         <p className="text-sm font-medium text-card-foreground truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground">{formatMoney(item.unitPrice)} each</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 rounded-md border bg-background">
+                            <button
+                              onClick={() => setLineQty(item.productId, item.qty - 1)}
+                              type="button"
+                              className="w-7 h-7 flex items-center justify-center hover:bg-muted transition-colors rounded-l-sm"
+                            >
+                              <Minus className="w-3 h-3 text-foreground" />
+                            </button>
+                            <span className="w-6 text-center text-xs font-semibold text-card-foreground tabular-nums">
+                              {item.qty}
+                            </span>
+                            <button
+                              onClick={() => setLineQty(item.productId, item.qty + 1)}
+                              disabled={item.qty >= item.availableQty}
+                              type="button"
+                              className="w-7 h-7 flex items-center justify-center hover:bg-muted transition-colors rounded-r-sm disabled:opacity-50"
+                            >
+                              <Plus className="w-3 h-3 text-foreground" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => removeLine(item.productId)}
+                            type="button"
+                            className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setLineQty(item.productId, item.qty - 1)}
-                          type="button"
-                          className="w-6 h-6 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors"
-                        >
-                          <Minus className="w-3 h-3 text-foreground" />
-                        </button>
-                        <span className="w-7 text-center text-sm font-semibold text-card-foreground tabular-nums">
-                          {item.qty}
+                      <div className="flex flex-col items-end justify-between h-11 shrink-0">
+                        <span className="text-sm font-semibold text-primary tabular-nums">
+                          {formatMoney(item.unitPrice * item.qty)}
                         </span>
-                        <button
-                          onClick={() => setLineQty(item.productId, item.qty + 1)}
-                          disabled={item.qty >= item.availableQty}
-                          type="button"
-                          className="w-6 h-6 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50"
-                        >
-                          <Plus className="w-3 h-3 text-foreground" />
-                        </button>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {item.qty} x {formatMoney(item.unitPrice)}
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold text-card-foreground w-20 text-right tabular-nums">
-                        {formatMoney(item.unitPrice * item.qty)}
-                      </span>
-                      <button
-                        onClick={() => removeLine(item.productId)}
-                        type="button"
-                        className="w-6 h-6 rounded-md hover:bg-destructive/10 flex items-center justify-center transition-colors"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 className="w-3 h-3 text-destructive" />
-                      </button>
                     </div>
                   ))
                 )

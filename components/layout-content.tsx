@@ -112,6 +112,10 @@ export function LayoutContent({
       if (!user) return false
       if (user.role === 'admin' || user.role === 'super_admin') return true
       const roleKey = String(user.role ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '')
       return Boolean((rolePermissions as any)?.[roleKey]?.[key])
     }
   }, [rolePermissions, user])

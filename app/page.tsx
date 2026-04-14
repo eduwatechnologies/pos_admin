@@ -84,7 +84,7 @@ export default function Home() {
             <span className="inline-flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <StoreIcon className="size-5" />
             </span>
-            <div className="text-sm font-semibold text-foreground">BillScan POS</div>
+            <div className="text-sm font-semibold text-foreground">Kounter POS</div>
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="h-9 px-3">
@@ -104,7 +104,7 @@ export default function Home() {
               Sales • Inventory • Receipts • Staff
             </div>
             <div className="space-y-3">
-              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">BillScan POS Dashboard</h1>
+              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Kounter POS Dashboard</h1>
               <p className="text-base text-muted-foreground md:text-lg">
                 Run your store in one place. Track sales, manage inventory, print receipts, and monitor staff performance — fast.
               </p>
@@ -361,7 +361,7 @@ export default function Home() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2">
                 <StoreIcon className="size-4" />
-                <div>BillScan POS</div>
+                <div>Kounter POS</div>
               </div>
               <div className="flex items-center gap-4">
                 <Link href="/auth/login" className="hover:text-foreground">Login</Link>
