@@ -2,11 +2,12 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { Bell, ChevronDown, LogOut } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Wifi, WifiOff } from 'lucide-react'
 
 import { useAuth } from '@/context/auth-context'
 import { ShopSwitcherInline } from '@/components/shop-switcher-inline'
 import { useShop } from '@/context/shop-context'
+import { useSync } from '@/context/sync-context'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useGetBillingSubscriptionQuery } from '@/redux/api/billing-api'
+import { cn } from '@/lib/utils'
 
 function getTitleFromPath(pathname: string) {
   if (pathname.startsWith('/employees/performance')) return 'Employee Performance'
@@ -52,6 +54,7 @@ export function TopHeader() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const { currentShop } = useShop()
+  const { isOnline } = useSync()
   const [billingOpen, setBillingOpen] = useState(false)
   const [navLayout, setNavLayout] = useState<'sidebar' | 'topbar'>('sidebar')
 
@@ -112,6 +115,26 @@ export function TopHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors',
+              isOnline
+                ? 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
+                : 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+            )}
+          >
+            {isOnline ? (
+              <>
+                <Wifi className="size-3" />
+                <span className="hidden sm:inline">Online</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="size-3" />
+                <span className="hidden sm:inline">Offline Mode</span>
+              </>
+            )}
+          </div>
           {isAdmin && <ShopSwitcherInline />}
           {currentShop ? (
             <button

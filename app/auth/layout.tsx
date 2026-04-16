@@ -1,4 +1,4 @@
-import { StoreIcon } from 'lucide-react'
+import Image from 'next/image'
 
 export default function AuthLayout({
   children,
@@ -14,10 +14,16 @@ export default function AuthLayout({
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent" />
               <div className="relative flex w-full flex-col p-10">
                 <div className="flex items-center gap-3 text-lg font-semibold">
-                  <span className="inline-flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                    <StoreIcon className="size-5" />
-                  </span>
-                  BillScan POS
+                  <div className="flex size-10 items-center justify-center rounded-xl overflow-hidden">
+                    <Image
+                      src="/kounterLogo.jpeg"
+                      alt="Kounter Logo"
+                      width={40}
+                      height={40}
+                      className="object-cover"
+                    />
+                  </div>
+                  Kounter POS
                 </div>
                 <div className="my-auto max-w-md space-y-2">
                   <div className="text-3xl font-semibold tracking-tight">Run your store in one place.</div>

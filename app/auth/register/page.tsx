@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { AlertCircle, EyeIcon, EyeOffIcon, StoreIcon } from 'lucide-react'
+import { AlertCircle, EyeIcon, EyeOffIcon } from 'lucide-react'
+import Image from 'next/image'
 
 import { useAuth } from '@/context/auth-context'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -67,10 +68,16 @@ export default function RegisterPage() {
     <Card className="border-0 shadow-none">
       <CardHeader className="space-y-2 text-center sm:text-left">
         <div className="flex items-center justify-center gap-2 sm:justify-start md:hidden">
-          <span className="inline-flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <StoreIcon className="size-5" />
-          </span>
-          <div className="text-lg font-semibold">BillScan POS</div>
+          <div className="flex size-10 items-center justify-center rounded-xl overflow-hidden">
+            <Image
+              src="/kounterLogo.jpeg"
+              alt="Kounter Logo"
+              width={40}
+              height={40}
+              className="object-cover"
+            />
+          </div>
+          <div className="text-lg font-semibold">Kounter POS</div>
         </div>
         <CardTitle>Create account</CardTitle>
         <CardDescription>We’ll create your first shop automatically.</CardDescription>

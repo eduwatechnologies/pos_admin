@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 
 export function SyncStatus() {
-  const { lastSyncTime, isSyncing, syncData } = useSync()
+  const { lastSyncTime, isSyncing, triggerSync, isOnline, pendingCount } = useSync()
   const [syncText, setSyncText] = useState<string>('')
 
   useEffect(() => {
@@ -16,8 +16,8 @@ export function SyncStatus() {
     }
 
     const updateSyncText = () => {
-      const now = new Date()
-      const diff = now.getTime() - lastSyncTime.getTime()
+      const now = Date.now()
+      const diff = now - lastSyncTime
       const seconds = Math.floor(diff / 1000)
       const minutes = Math.floor(seconds / 60)
       const hours = Math.floor(minutes / 60)
@@ -29,7 +29,7 @@ export function SyncStatus() {
       } else if (hours < 24) {
         setSyncText(`${hours}h ago`)
       } else {
-        setSyncText(lastSyncTime.toLocaleDateString())
+        setSyncText(new Date(lastSyncTime).toLocaleDateString())
       }
     }
 
@@ -43,8 +43,8 @@ export function SyncStatus() {
     <div className="space-y-2">
       <div className="px-4 pb-4 border-t border-sidebar-border">
         <Button
-          onClick={() => syncData()}
-          disabled={isSyncing}
+          onClick={() => triggerSync()}
+          disabled={isSyncing || !isOnline}
           className="w-full gap-2 text-sm border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground"
           variant="outline"
           size="sm"
@@ -57,28 +57,34 @@ export function SyncStatus() {
           ) : (
             <>
               <RefreshCw size={16} />
-              Manual Sync
+              Sync Now {pendingCount > 0 ? `(${pendingCount})` : ''}
             </>
           )}
         </Button>
 
         <div className="mt-3 text-xs space-y-1">
           <div className="flex items-center gap-2 text-sidebar-foreground/80">
-            {lastSyncTime ? (
+            {isOnline ? (
               <>
                 <Cloud size={12} className="text-green-500" />
-                <span>Synced: {syncText}</span>
+                <span className="text-green-600 font-medium">Online</span>
               </>
             ) : (
               <>
-                <CloudOff size={12} className="text-red-500" />
-                <span>Not synced</span>
+                <CloudOff size={12} className="text-amber-500" />
+                <span className="text-amber-600 font-medium">Offline Mode</span>
               </>
             )}
           </div>
-          <div className="text-sidebar-foreground/80">
-            Auto-sync enabled
+          <div className="flex items-center gap-2 text-sidebar-foreground/80">
+            <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+            <span>Last Sync: {syncText}</span>
           </div>
+          {pendingCount > 0 && (
+            <div className="text-amber-600 font-medium">
+              {pendingCount} item{pendingCount === 1 ? '' : 's'} waiting to sync
+            </div>
+          )}
         </div>
       </div>
     </div>

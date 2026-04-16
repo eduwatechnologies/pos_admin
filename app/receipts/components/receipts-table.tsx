@@ -40,8 +40,14 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
 
   const paymentMethods = ['all', ...Array.from(new Set(receipts.map(r => r.paymentMethod)))]
 
-  const getStatusBadge = (status: string | undefined) => {
+  const getStatusBadge = (status: string | undefined, id: string) => {
     const s = String(status ?? 'completed').toLowerCase()
+    const isLocal = id.startsWith('local_')
+
+    if (isLocal && s === 'pending') {
+      return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 animate-pulse">Syncing...</Badge>
+    }
+
     if (s === 'completed' || s === 'paid') {
       return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{s}</Badge>
     }
@@ -129,7 +135,7 @@ export function ReceiptsTable({ receipts, onView, onPrint, onShare }: ReceiptsTa
                     <TableCell className="text-right font-bold text-primary tabular-nums">
                       {money.format(receipt.total)}
                     </TableCell>
-                    <TableCell>{getStatusBadge(receipt.status)}</TableCell>
+                    <TableCell>{getStatusBadge(receipt.status, receipt.id)}</TableCell>
                     <TableCell>{getPaymentBadge(receipt.paymentMethod)}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-1">

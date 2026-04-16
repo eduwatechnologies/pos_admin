@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   BarChart3,
   ChevronLeft,
@@ -175,8 +176,14 @@ export function Sidebar() {
 
         {/* Logo area */}
         <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
-            <Store className="size-4" />
+          <div className="flex size-8 items-center justify-center rounded-lg overflow-hidden shrink-0">
+            <Image
+              src="/kounterLogo.jpeg"
+              alt="Kounter Logo"
+              width={32}
+              height={32}
+              className="object-cover"
+            />
           </div>
           {!collapsed ? (
             <span className="text-sidebar-accent-foreground font-semibold text-lg tracking-tight">Kounter</span>

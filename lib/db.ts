@@ -34,7 +34,7 @@ export interface LocalReceipt {
   paymentMethod: string
   customerId: string | null
   customerName: string | null
-  cashierUserId: string | null
+  cashierId: string | null
   status: 'pending' | 'completed' | 'failed'
   synced: boolean
   syncedAt: number | null
@@ -59,32 +59,54 @@ export interface LocalSettings {
   updatedAt: number
 }
 
+export interface LocalCategory {
+  id: string
+  shopId: string
+  name: string
+  isActive: boolean
+  updatedAt: number
+}
+
 class KounterDatabase extends Dexie {
   products!: EntityTable<LocalProduct, 'id'>
   receipts!: EntityTable<LocalReceipt, 'id'>
   syncQueue!: EntityTable<SyncQueueItem, 'id'>
   settings!: EntityTable<LocalSettings, 'key'>
+  categories!: EntityTable<LocalCategory, 'id'>
 
   constructor() {
     super('KounterPOS')
 
-    this.version(1).stores({
+    this.version(2).stores({
       products: 'id, shopId, name, category, barcode, sku, isActive, updatedAt',
       receipts: 'id, shopId, localId, status, synced, createdAt',
       syncQueue: '++id, type, entityId, status, createdAt',
       settings: 'key, updatedAt',
+      categories: 'id, shopId, name, isActive, updatedAt',
     })
   }
 }
 
 export const db = new KounterDatabase()
 
-export async function initializeLocalData(shopId: string, products: LocalProduct[]) {
-  await db.transaction('rw', db.products, db.settings, async () => {
+export async function initializeLocalData(shopId: string, products: LocalProduct[], categories: LocalCategory[] = []) {
+  await db.transaction('rw', db.products, db.categories, db.settings, async () => {
+    // Clear and re-add products
     await db.products.where({ shopId }).delete()
     await db.products.bulkAdd(products.map(p => ({ ...p, shopId, updatedAt: Date.now() })))
+    
+    // Clear and re-add categories
+    await db.categories.where({ shopId }).delete()
+    if (categories.length > 0) {
+      await db.categories.bulkAdd(categories.map(c => ({ ...c, shopId, updatedAt: Date.now() })))
+    }
+    
     await db.settings.put({ key: 'lastSync', value: Date.now(), updatedAt: Date.now() })
   })
+}
+
+export async function getLocalCategories(shopId: string) {
+  return db.categories.where({ shopId, isActive: true }).toArray()
 }
 
 export async function getLocalProducts(shopId: string) {
@@ -105,7 +127,7 @@ export async function saveLocalReceipt(receipt: Omit<LocalReceipt, 'id' | 'synce
 }
 
 export async function markReceiptSynced(id: string) {
-  await db.receipts.update(id, { synced: true, syncedAt: Date.now() })
+  await db.receipts.update(id, { synced: true, syncedAt: Date.now(), status: 'completed' })
 }
 
 export async function getUnsyncedReceipts() {

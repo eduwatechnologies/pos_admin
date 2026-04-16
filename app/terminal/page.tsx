@@ -395,7 +395,7 @@ export default function TerminalPage() {
         paymentMethod: method,
         customerId,
         customerName: finalCustomerName,
-        cashierUserId: user?.sub || null,
+        cashierId: user?.id || null,
         source: 'pos',
       })
 
@@ -419,7 +419,7 @@ export default function TerminalPage() {
         paymentMethod: method,
         customerId,
         customerName: finalCustomerName,
-        cashierId: user?.sub || null,
+        cashierId: user?.id || null,
         cashierName: user?.name || null,
         status: 'completed',
         createdAt: new Date().toISOString(),
@@ -449,6 +449,15 @@ export default function TerminalPage() {
 
   return (
     <div className="p-4 md:p-6">
+      {!isOnline && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+          <WifiOff className="size-5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold">Offline Mode Active</p>
+            <p className="text-xs opacity-80">Sales will be saved locally and synced when connection returns.</p>
+          </div>
+        </div>
+      )}
       <div className="mb-4">
         {/* <div className="text-lg font-semibold">POS Terminal</div> */}
         {/* <div className="text-sm text-muted-foreground">

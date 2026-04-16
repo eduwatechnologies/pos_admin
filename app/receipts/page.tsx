@@ -11,6 +11,7 @@ import { useShop } from '@/context/shop-context'
 import { useListReceiptsQuery, useRefundReceiptMutation } from '@/redux/api/receipts-api'
 import PrintableReceipt from '@/components/printable-reciept'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
+import { useLocalReceipts } from '@/lib/offline-hooks'
 
 export default function ReceiptsPage() {
   const { isAuthenticated, user } = useAuth()
@@ -28,10 +29,35 @@ export default function ReceiptsPage() {
     }
   }, [isAuthenticated, router])
 
-  const { data: receipts = [], error } = useListReceiptsQuery(
+  const { data: remoteReceipts = [], error, isLoading: isRemoteLoading } = useListReceiptsQuery(
     { shopId: currentShop?.id ?? '' },
     { skip: !isAuthenticated || !currentShop }
   )
+  const { localReceipts, isLoading: isLocalLoading } = useLocalReceipts(currentShop?.id)
+
+  const receipts = useMemo(() => {
+    // Combine remote and local receipts, prioritizing remote if IDs match (synced)
+    // Local IDs start with 'local_', remote IDs are usually UUIDs
+    const map = new Map<string, Receipt>()
+    
+    // Add remote first
+    remoteReceipts.forEach(r => map.set(r.id, r as unknown as Receipt))
+    
+    // Add local ones that aren't already represented by remote ones
+    // Note: When synced, the local entry might still exist but the remote one should be preferred
+    // If we have a local ID and it's synced, we might find a remote one with the same content
+    localReceipts.forEach(l => {
+      // Check if this local receipt has a remote counterpart
+      // This is a bit tricky if IDs don't match, but we can look for similar data or just show both
+      // For now, let's just add local ones that aren't in the remote list
+      if (!map.has(l.id)) {
+        map.set(l.id, l)
+      }
+    })
+
+    return Array.from(map.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [remoteReceipts, localReceipts])
+
   const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip: !isAuthenticated || !currentShop })
   const [refundReceipt, { isLoading: isRefunding }] = useRefundReceiptMutation()
 
