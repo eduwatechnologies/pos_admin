@@ -77,7 +77,7 @@ export default function RegisterPage() {
               className="object-cover"
             />
           </div>
-          <div className="text-lg font-semibold">Kounter POS</div>
+          <div className="text-lg font-semibold sm:hidden ">Kounter POS</div>
         </div>
         <CardTitle>Create account</CardTitle>
         <CardDescription>We’ll create your first shop automatically.</CardDescription>

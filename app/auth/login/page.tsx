@@ -89,7 +89,7 @@ export default function LoginPage() {
               className="object-cover"
             />
           </div>
-          <div className="text-lg font-semibold">Kounter POS</div>
+          <div className="sm:hidden text-lg font-semibold">Kounter POS</div>
         </div>
         <CardTitle>Welcome back</CardTitle>
         <CardDescription>Sign in to continue to your dashboard.</CardDescription>
