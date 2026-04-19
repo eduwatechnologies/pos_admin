@@ -91,8 +91,10 @@ export default function LoginPage() {
           </div>
           <div className="sm:hidden text-lg font-semibold">Kounter POS</div>
         </div>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>Sign in to continue to your dashboard.</CardDescription>
+        <div className="space-y-1">
+          <CardTitle className="text-2xl tracking-tight">Welcome back</CardTitle>
+          <CardDescription>Sign in to continue to your dashboard.</CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         {isNavigating ? (
@@ -118,21 +120,30 @@ export default function LoginPage() {
               type="email"
               placeholder="admin@pos.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (error) setError('')
+              }}
               autoComplete="email"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="password">Password</Label>
+              <span className="text-xs text-muted-foreground">Case-sensitive</span>
+            </div>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (error) setError('')
+                }}
                 autoComplete="current-password"
                 className="pr-10"
                 required
@@ -167,8 +178,19 @@ export default function LoginPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? 'Signing in…' : 'Sign in'}
+            {busy ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                Signing in…
+              </span>
+            ) : (
+              'Sign in'
+            )}
           </Button>
+
+          <div className="text-center text-xs text-muted-foreground sm:text-left">
+            By continuing, you agree to use Kounter POS responsibly.
+          </div>
         </form>
       </CardContent>
     </Card>

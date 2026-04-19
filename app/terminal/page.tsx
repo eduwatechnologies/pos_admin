@@ -17,8 +17,6 @@ import {
   ShoppingBag,
   Smartphone,
   Trash2,
-  Wifi,
-  WifiOff,
   X,
 } from 'lucide-react'
 
@@ -48,9 +46,6 @@ import { useListProductsQuery } from '@/redux/api/products-api'
 import { useCreateReceiptMutation } from '@/redux/api/receipts-api'
 import { useCreateCustomerMutation, useListCustomersQuery } from '@/redux/api/customers-api'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
-import { useOfflineReceipt } from '@/lib/offline-hooks'
-import { useSync } from '@/context/sync-context'
-import { db } from '@/lib/db'
 
 type CartLine = {
   productId: string
@@ -75,9 +70,6 @@ export default function TerminalPage() {
   const { toast } = useToast()
   const { isAuthenticated, user } = useAuth()
   const { currentShop } = useShop()
-  const { isOnline } = useSync()
-
-  const { saveReceiptLocally } = useOfflineReceipt()
 
   const walkInName = 'Walk-in'
 
@@ -385,27 +377,23 @@ export default function TerminalPage() {
     }))
 
     try {
-      const receiptId = await saveReceiptLocally({
+      const result = await createReceipt({
         shopId: currentShop.id,
-        items,
-        subtotalCents: Math.round(totals.subtotal * 100),
-        taxCents,
-        discountCents: 0,
-        totalCents: Math.round(totals.total * 100),
-        paymentMethod: method,
-        customerId,
-        customerName: finalCustomerName,
-        cashierId: user?.id || null,
-        source: 'pos',
-      })
+        input: {
+          items,
+          customerId,
+          customerName: finalCustomerName,
+          paymentMethod: method,
+          taxCents,
+        },
+      }).unwrap()
 
-      const localReceipt = await db.receipts.get(receiptId)
+      const receiptId = (result as any).id || (result as any).localId || 'unknown'
 
       setLastReceipt({
         id: receiptId,
-        localId: receiptId,
         shopId: currentShop.id,
-        items: items.map(i => ({
+        items: items.map((i) => ({
           productId: i.productId,
           name: i.name,
           quantity: i.qty,
@@ -433,7 +421,7 @@ export default function TerminalPage() {
 
       toast({
         title: 'Sale completed',
-        description: isOnline ? `Receipt ${receiptId.slice(-8).toUpperCase()} • ${formatMoney(totals.total)}` : `Offline sale saved • Will sync when online`,
+        description: `Receipt ${receiptId.slice(-8).toUpperCase()} • ${formatMoney(totals.total)}`,
       })
     } catch (err) {
       setCheckoutStep('payment')
@@ -449,15 +437,6 @@ export default function TerminalPage() {
 
   return (
     <div className="p-4 md:p-6">
-      {!isOnline && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-          <WifiOff className="size-5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold">Offline Mode Active</p>
-            <p className="text-xs opacity-80">Sales will be saved locally and synced when connection returns.</p>
-          </div>
-        </div>
-      )}
       <div className="mb-4">
         {/* <div className="text-lg font-semibold">POS Terminal</div> */}
         {/* <div className="text-sm text-muted-foreground">

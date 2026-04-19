@@ -29,7 +29,6 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
-import { SyncStatus } from './sync-status'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useShop } from '@/context/shop-context'
@@ -339,9 +338,6 @@ export function Sidebar() {
             {!collapsed ? <span>Sign Out</span> : null}
           </button>
         </div>
-
-        {/* Sync Status */}
-        {/* <SyncStatus /> */}
       </aside>
     </>
   )

@@ -11,7 +11,7 @@ import { useShop } from '@/context/shop-context'
 import { useListReceiptsQuery, useRefundReceiptMutation } from '@/redux/api/receipts-api'
 import PrintableReceipt from '@/components/printable-reciept'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
-import { useLocalReceipts } from '@/lib/offline-hooks'
+import { useListEmployeesQuery } from '@/redux/api/employees-api'
 
 export default function ReceiptsPage() {
   const { isAuthenticated, user } = useAuth()
@@ -29,34 +29,56 @@ export default function ReceiptsPage() {
     }
   }, [isAuthenticated, router])
 
-  const { data: remoteReceipts = [], error, isLoading: isRemoteLoading } = useListReceiptsQuery(
+  const { data: remoteReceipts = [], error } = useListReceiptsQuery(
     { shopId: currentShop?.id ?? '' },
     { skip: !isAuthenticated || !currentShop }
   )
-  const { localReceipts, isLoading: isLocalLoading } = useLocalReceipts(currentShop?.id)
+
+  const { data: employees = [] } = useListEmployeesQuery(
+    { shopId: currentShop?.id ?? '' },
+    { skip: !isAuthenticated || !currentShop }
+  )
+
+  const cashierNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const e of employees as any[]) {
+      const id = String((e as any)?.id ?? '')
+      const name = String((e as any)?.name ?? '').trim()
+      if (id && name) map.set(id, name)
+    }
+    return map
+  }, [employees])
 
   const receipts = useMemo(() => {
-    // Combine remote and local receipts, prioritizing remote if IDs match (synced)
-    // Local IDs start with 'local_', remote IDs are usually UUIDs
-    const map = new Map<string, Receipt>()
-    
-    // Add remote first
-    remoteReceipts.forEach(r => map.set(r.id, r as unknown as Receipt))
-    
-    // Add local ones that aren't already represented by remote ones
-    // Note: When synced, the local entry might still exist but the remote one should be preferred
-    // If we have a local ID and it's synced, we might find a remote one with the same content
-    localReceipts.forEach(l => {
-      // Check if this local receipt has a remote counterpart
-      // This is a bit tricky if IDs don't match, but we can look for similar data or just show both
-      // For now, let's just add local ones that aren't in the remote list
-      if (!map.has(l.id)) {
-        map.set(l.id, l)
-      }
+    const mapped = (remoteReceipts as any[]).map((r) => {
+      const cashierId = String(r?.cashierId ?? '')
+      const cashierName =
+        (r?.cashierName ? String(r.cashierName) : undefined) ??
+        (r?.cashier?.name ? String(r.cashier.name) : undefined) ??
+        (cashierId ? cashierNameById.get(cashierId) : undefined)
+
+      return {
+        id: String(r?.id ?? ''),
+        date: r?.date ? new Date(r.date) : new Date(),
+        customerId: r?.customerId ? String(r.customerId) : undefined,
+        customerName: r?.customerName ? String(r.customerName) : undefined,
+        items: Array.isArray(r?.items) ? r.items : [],
+        subtotal: Number(r?.subtotal ?? 0),
+        tax: Number(r?.tax ?? 0),
+        total: Number(r?.total ?? 0),
+        paymentMethod: String(r?.paymentMethod ?? ''),
+        status: r?.status ? String(r.status) : undefined,
+        refundedAt: r?.refundedAt ? new Date(r.refundedAt) : undefined,
+        refundReason: r?.refundReason ? String(r.refundReason) : undefined,
+        cashierId,
+        cashierName,
+        shopId: r?.shopId ? String(r.shopId) : undefined,
+        notes: r?.notes ? String(r.notes) : undefined,
+      } satisfies Receipt
     })
 
-    return Array.from(map.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [remoteReceipts, localReceipts])
+    return mapped.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [cashierNameById, remoteReceipts])
 
   const { data: settings } = useGetSettingsQuery({ shopId: currentShop?.id ?? '' }, { skip: !isAuthenticated || !currentShop })
   const [refundReceipt, { isLoading: isRefunding }] = useRefundReceiptMutation()
@@ -70,11 +92,14 @@ export default function ReceiptsPage() {
     })
   }, [error, toast])
 
-  const storeName = String(settings?.businessName ?? '') || String(currentShop?.name ?? 'Store')
+  const storeName = currentShop?.name ?? undefined
   const storeLines = useMemo(() => {
-    const lines = [settings?.address ? String(settings.address) : '', settings?.phone ? String(settings.phone) : ''].filter(Boolean)
+    const lines = [
+      currentShop?.address || currentShop?.location || undefined,
+      currentShop?.phone ? `Tel: ${currentShop.phone}` : undefined,
+    ].filter(Boolean) as string[]
     return lines.length ? lines : undefined
-  }, [settings?.address, settings?.phone])
+  }, [currentShop?.address, currentShop?.location, currentShop?.phone])
 
   const canRefund = useMemo(() => {
     if (!user) return false
@@ -151,7 +176,8 @@ export default function ReceiptsPage() {
           total={printReceipt.total}
           paymentMethod={String(printReceipt.paymentMethod ?? '')}
           cashierName={printReceipt.cashierName}
-          customerName={printReceipt.customerName}
+          customerName={printReceipt.customerName ? printReceipt.customerName : 'Walk-in'}
+          currency="NGN"
           storeName={storeName}
           storeLines={storeLines}
           transactionId={printReceipt.id}
@@ -161,6 +187,7 @@ export default function ReceiptsPage() {
             setPrintReceipt(null)
             setPrintInitialAction(undefined)
           }}
+          
         />
       ) : null}
     </div>

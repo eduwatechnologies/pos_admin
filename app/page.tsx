@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart3, Package, Receipt, ShoppingCart, StoreIcon, TrendingUp, Users, ArrowRight, CheckCircle2, Zap, Shield, Smartphone } from 'lucide-react'
+import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/auth-context'
@@ -24,8 +25,8 @@ export default function Home() {
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="inline-flex size-10 items-center justify-center rounded-xl bg-teal-600 text-white shadow-lg shadow-teal-600/25">
-              <StoreIcon className="size-5" />
+            <div className="inline-flex size-10 items-center justify-center rounded-xl bg-white ring-1 ring-slate-200 shadow-lg shadow-slate-200/40 overflow-hidden">
+              <Image src="/kounterLogo.jpeg" alt="Kounter Logo" width={40} height={40} className="object-cover" />
             </div>
             <span className="text-xl font-bold text-slate-900">Kounter</span>
           </div>
@@ -127,6 +128,149 @@ export default function Home() {
                 <p className="mt-2 text-slate-600">{desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Plans for every store size</h2>
+            <p className="mt-4 text-lg text-slate-600">Start small and upgrade when you’re ready. Keep the same teal look across every plan.</p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/40">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Starter</div>
+                  <div className="mt-1 text-sm text-slate-600">For single-store teams.</div>
+                </div>
+                <div className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 border border-teal-200">
+                  7-day trial
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex items-end gap-2">
+                  <div className="text-4xl font-bold text-slate-900">₦0</div>
+                  <div className="pb-1 text-sm text-slate-500">/ trial</div>
+                </div>
+                <div className="mt-2 text-sm text-slate-600">Includes core POS features to get you selling fast.</div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {[
+                  'POS terminal + receipts',
+                  'Products + categories',
+                  'Customers + refunds',
+                  'Basic analytics',
+                ].map((text) => (
+                  <div key={text} className="flex items-start gap-3">
+                    <div className="mt-0.5 inline-flex size-5 items-center justify-center rounded-full bg-teal-100">
+                      <CheckCircle2 className="size-3 text-teal-700" />
+                    </div>
+                    <span className="text-sm text-slate-700">{text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8">
+                <Button asChild className="w-full h-11 rounded-xl bg-slate-900 hover:bg-slate-800">
+                  <Link href="/auth/register">Start trial</Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative rounded-2xl border border-teal-200 bg-white p-8 shadow-xl shadow-teal-600/10">
+              <div className="pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-teal-600 px-4 py-1.5 text-xs font-semibold text-white shadow-lg shadow-teal-600/30">
+                Most popular
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Business</div>
+                  <div className="mt-1 text-sm text-slate-600">For growing stores.</div>
+                </div>
+                <div className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 border border-teal-200">
+                  Best value
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex items-end gap-2">
+                  <div className="text-4xl font-bold text-slate-900">₦5,000</div>
+                  <div className="pb-1 text-sm text-slate-500">/ month</div>
+                </div>
+                <div className="mt-2 text-sm text-slate-600">More control, more insights, and better operations.</div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {[
+                  'Everything in Starter',
+                  'Employees + permissions',
+                  'Purchases + suppliers',
+                  'Advanced reports',
+                ].map((text) => (
+                  <div key={text} className="flex items-start gap-3">
+                    <div className="mt-0.5 inline-flex size-5 items-center justify-center rounded-full bg-teal-100">
+                      <CheckCircle2 className="size-3 text-teal-700" />
+                    </div>
+                    <span className="text-sm text-slate-700">{text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8">
+                <Button asChild className="w-full h-11 rounded-xl bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-600/25">
+                  <Link href="/auth/register">
+                    Get started
+                    <ArrowRight className="size-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/40">
+              <div>
+                <div className="text-sm font-semibold text-slate-900">Pro</div>
+                <div className="mt-1 text-sm text-slate-600">For teams that need more control.</div>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex items-end gap-2">
+                  <div className="text-4xl font-bold text-slate-900">₦10,000</div>
+                  <div className="pb-1 text-sm text-slate-500">/ month</div>
+                </div>
+                <div className="mt-2 text-sm text-slate-600">Reliable tools for busy stores and growing operations.</div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {[
+                  'Everything in Business',
+                  'Priority support',
+                  'Advanced controls',
+                  'Higher staff limits',
+                ].map((text) => (
+                  <div key={text} className="flex items-start gap-3">
+                    <div className="mt-0.5 inline-flex size-5 items-center justify-center rounded-full bg-teal-100">
+                      <CheckCircle2 className="size-3 text-teal-700" />
+                    </div>
+                    <span className="text-sm text-slate-700">{text}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8">
+                <Button asChild variant="outline" className="w-full h-11 rounded-xl border-slate-300 hover:border-slate-400 hover:bg-slate-50">
+                  <Link href="/auth/register">Choose Pro</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 text-center text-sm text-slate-500">
+            All plans use the same secure platform and teal theme. Cancel anytime.
           </div>
         </div>
       </section>

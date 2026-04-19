@@ -170,7 +170,7 @@ export function mapReceipt(r: any, cashierNameById?: Map<string, string>): ApiRe
     refundedAt: r?.refundedAt ? toIsoDate(r.refundedAt) : undefined,
     refundReason: r?.refundReason ? String(r.refundReason) : undefined,
     cashierId,
-    cashierName: cashierNameById?.get(cashierId),
+    cashierName: r?.cashierName ? String(r.cashierName) : cashierNameById?.get(cashierId),
     shopId: r?.shopId ? String(r.shopId) : undefined,
     notes: undefined,
   }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { AlertCircle, EyeIcon, EyeOffIcon } from 'lucide-react'
+import { AlertCircle, EyeIcon, EyeOffIcon, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 
 import { useAuth } from '@/context/auth-context'
@@ -79,8 +79,10 @@ export default function RegisterPage() {
           </div>
           <div className="text-lg font-semibold sm:hidden ">Kounter POS</div>
         </div>
-        <CardTitle>Create account</CardTitle>
-        <CardDescription>We’ll create your first shop automatically.</CardDescription>
+        <div className="space-y-1">
+          <CardTitle className="text-2xl tracking-tight">Create account</CardTitle>
+          <CardDescription>We’ll create your first shop automatically.</CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -93,7 +95,16 @@ export default function RegisterPage() {
 
           <div className="space-y-2">
             <Label htmlFor="name">Full name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required />
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                if (error) setError('')
+              }}
+              placeholder="John Doe"
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -101,7 +112,10 @@ export default function RegisterPage() {
             <Input
               id="shopName"
               value={shopName}
-              onChange={(e) => setShopName(e.target.value)}
+              onChange={(e) => {
+                setShopName(e.target.value)
+                if (error) setError('')
+              }}
               placeholder="e.g. Ikeja Branch"
             />
           </div>
@@ -113,21 +127,30 @@ export default function RegisterPage() {
               type="email"
               placeholder="admin@pos.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (error) setError('')
+              }}
               autoComplete="email"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="password">Password</Label>
+              <span className="text-xs text-muted-foreground">At least 8 characters</span>
+            </div>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (error) setError('')
+                }}
                 autoComplete="new-password"
                 className="pr-10"
                 required
@@ -147,11 +170,26 @@ export default function RegisterPage() {
 
           <div className="space-y-2">
             <Label htmlFor="currency">Currency</Label>
-            <Input id="currency" value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="NGN" />
+            <Input
+              id="currency"
+              value={currency}
+              onChange={(e) => {
+                setCurrency(e.target.value)
+                if (error) setError('')
+              }}
+              placeholder="NGN"
+            />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Creating…' : 'Create account'}
+          <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Creating…
+              </>
+            ) : (
+              'Create account'
+            )}
           </Button>
 
           <div className="text-center text-sm text-muted-foreground sm:text-left">
@@ -159,6 +197,10 @@ export default function RegisterPage() {
             <Link href="/auth/login" className="text-primary underline-offset-4 hover:underline">
               Sign in
             </Link>
+          </div>
+
+          <div className="text-center text-xs text-muted-foreground sm:text-left">
+            Your account can manage staff and sales across your shop.
           </div>
         </form>
       </CardContent>

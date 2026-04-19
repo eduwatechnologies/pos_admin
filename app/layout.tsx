@@ -3,7 +3,6 @@ import { Analytics } from '@vercel/analytics/next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from '@/context/auth-context'
 import { ShopProvider } from '@/context/shop-context'
-import { SyncProvider } from '@/context/sync-context'
 import { ReduxProvider } from '@/redux/provider'
 import { LayoutContent } from '@/components/layout-content'
 import './globals.css'
@@ -36,9 +35,7 @@ export default function RootLayout({
         <ReduxProvider>
           <AuthProvider>
             <ShopProvider>
-              <SyncProvider>
-                <LayoutContent>{children}</LayoutContent>
-              </SyncProvider>
+              <LayoutContent>{children}</LayoutContent>
             </ShopProvider>
           </AuthProvider>
         </ReduxProvider>
