@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit'
+import { configureStore, isPlain } from '@reduxjs/toolkit'
 
 import { baseApi } from '@/redux/api/base-api'
 import appReducer from '@/redux/features/app/app-slice'
@@ -9,6 +9,9 @@ import analyticsReducer from '@/redux/features/analytics/analytics-slice'
 import settingsReducer from '@/redux/features/settings/settings-slice'
 import productsReducer from '@/redux/features/products/products-slice'
 import shopsReducer from '@/redux/features/shops/shops-slice'
+
+const isSerializable = (value: unknown) => value instanceof Date || isPlain(value)
+const getEntries = (value: unknown) => (isPlain(value) ? Object.entries(value) : [])
 
 export const store = configureStore({
   reducer: {
@@ -22,7 +25,13 @@ export const store = configureStore({
     shops: shopsReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(baseApi.middleware),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        isSerializable,
+        getEntries,
+      },
+    }).concat(baseApi.middleware),
 })
 
 export type RootState = ReturnType<typeof store.getState>

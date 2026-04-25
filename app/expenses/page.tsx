@@ -210,11 +210,7 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Expenses</h1>
-          <p className="text-muted-foreground mt-2">Record and manage expenses</p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button type="button" className="h-9 gap-2 rounded-lg" onClick={openCreate} disabled={!canManageAnalytics || !currentShop}>
           <Plus className="h-4 w-4" />
           New Expense

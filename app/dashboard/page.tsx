@@ -177,13 +177,7 @@ export default function Home() {
 
   return (
     <div className="space-y-6 p-4 md:p-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Sales overview and key performance metrics.</p>
-        </div>
-
-        <div className="flex flex-col items-start gap-2 sm:items-end">
+      <div className="flex flex-col items-start gap-2 sm:items-end">
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {([
               { id: 'today', label: 'Today' },
@@ -211,7 +205,6 @@ export default function Home() {
               <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="h-9 w-[160px]" />
             </div>
           ) : null}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -245,12 +238,12 @@ export default function Home() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-center">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
         <div className="lg:col-span-2 space-y-6">
           <SalesChart data={salesTrend} title="Revenue Overview" subtitle={rangeLabel} />
           
         </div>
-        <div className="space-y-6">
+        <div className="space-y-6 lg:self-start">
           
           <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

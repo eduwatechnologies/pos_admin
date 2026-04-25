@@ -59,21 +59,14 @@ export default function StoresPage() {
   if (!canManageStores) {
     return (
       <div className="space-y-8 p-4 md:p-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stores</h1>
-          <p className="text-muted-foreground mt-2">You do not have access to manage stores.</p>
-        </div>
+        <div className="text-sm text-muted-foreground">You do not have access to manage stores.</div>
       </div>
     )
   }
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stores</h1>
-          <p className="text-muted-foreground mt-2">Create and manage your stores.</p>
-        </div>
+      <div className="flex items-center justify-end gap-2">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{shops.length} total</Badge>
           <Button

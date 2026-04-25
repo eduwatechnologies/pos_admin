@@ -51,11 +51,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground mt-2">Detailed sales insights and performance metrics</p>
-      </div>
-
       <RevenueSummary />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">

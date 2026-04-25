@@ -284,11 +284,7 @@ export default function PurchasesPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Purchases</h1>
-          <p className="text-muted-foreground mt-2">Record purchases and update stock</p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button type="button" className="h-9 gap-2 rounded-lg" onClick={() => setModalOpen(true)} disabled={!canManageInventory || !currentShop}>
           <Plus className="h-4 w-4" />
           New Purchase

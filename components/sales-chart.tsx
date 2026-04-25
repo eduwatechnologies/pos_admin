@@ -82,12 +82,12 @@ export function SalesChart({ data, title = 'Sales', subtitle }: SalesChartProps)
       transition={{ delay: 0.3, duration: 0.4 }}
       className="bg-card rounded-xl border border-border p-5 shadow-sm"
     >
-      <div className="flex items-center justify-between mb-5">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+        <div className="min-w-0">
           <h3 className="font-semibold text-card-foreground">{title}</h3>
           <p className="text-sm text-muted-foreground">{resolvedSubtitle}</p>
         </div>
-        <div className="flex gap-1 bg-secondary rounded-lg p-0.5">
+        <div className="flex shrink-0 flex-wrap gap-1 bg-secondary rounded-lg p-0.5">
           {(['Week', 'Month', 'Year'] as const).map((p) => (
             <button
               key={p}

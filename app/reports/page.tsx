@@ -105,13 +105,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground mt-2">Sales and finance report summary.</p>
-        </div>
-
-        <div className="flex flex-col items-start gap-2 sm:items-end">
+      <div className="flex flex-col items-start gap-2 sm:items-end">
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {([
               { id: 'today', label: 'Today' },
@@ -139,7 +133,6 @@ export default function ReportsPage() {
               <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="h-9 w-[160px]" />
             </div>
           ) : null}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -199,4 +192,3 @@ export default function ReportsPage() {
     </div>
   )
 }
-

@@ -141,13 +141,6 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Audit Log</h1>
-          <p className="text-muted-foreground mt-2">System activity for this shop</p>
-        </div>
-      </div>
-
       <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative">
@@ -267,4 +260,3 @@ export default function AuditPage() {
     </div>
   )
 }
-

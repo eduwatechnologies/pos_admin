@@ -213,13 +213,6 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground mt-2">Manage your customer directory</p>
-        </div>
-      </div>
-
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">

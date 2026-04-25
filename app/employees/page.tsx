@@ -229,42 +229,36 @@ export default function EmployeesPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
-          <p className="text-muted-foreground mt-2">Manage your team members</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/employees/performance">
-            <Button variant="outline" className="gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Performance
-            </Button>
-          </Link>
-          <Button
-            onClick={() => {
-              if (isEmployeeLimitReached) {
-                toast({
-                  title: 'Plan limit reached',
-                  description:
-                    typeof maxEmployees === 'number'
-                      ? `You have reached your plan limit (${employees.length}/${maxEmployees}). Upgrade to add more staff.`
-                      : 'You have reached your plan limit. Upgrade to add more staff.',
-                  variant: 'destructive',
-                })
-                router.push('/settings/system')
-                return
-              }
-              setEditingEmployee(undefined)
-              setModalOpen(true)
-            }}
-            className="gap-2"
-            disabled={!canManageEmployees || !currentShop || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting || isEmployeeLimitReached}
-          >
-            <Plus className="h-4 w-4" />
-            {isLoading ? 'Loading…' : 'Add Employee'}
+      <div className="flex items-center justify-end gap-2">
+        <Link href="/employees/performance">
+          <Button variant="outline" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Performance
           </Button>
-        </div>
+        </Link>
+        <Button
+          onClick={() => {
+            if (isEmployeeLimitReached) {
+              toast({
+                title: 'Plan limit reached',
+                description:
+                  typeof maxEmployees === 'number'
+                    ? `You have reached your plan limit (${employees.length}/${maxEmployees}). Upgrade to add more staff.`
+                    : 'You have reached your plan limit. Upgrade to add more staff.',
+                variant: 'destructive',
+              })
+              router.push('/settings/system')
+              return
+            }
+            setEditingEmployee(undefined)
+            setModalOpen(true)
+          }}
+          className="gap-2"
+          disabled={!canManageEmployees || !currentShop || isLoading || isCreating || isUpdating || isSettingStatus || isDeleting || isEmployeeLimitReached}
+        >
+          <Plus className="h-4 w-4" />
+          {isLoading ? 'Loading…' : 'Add Employee'}
+        </Button>
       </div>
       {isEmployeeLimitReached ? (
         <div className="text-sm text-muted-foreground">

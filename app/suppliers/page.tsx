@@ -76,16 +76,15 @@ export default function SuppliersPage() {
     })
   }, [suppliers, searchTerm])
 
-  useEffect(() => {
-    if (!modalOpen) return
-    setName(editing?.name ?? '')
-    setEmail(editing?.email ?? '')
-    setPhone(editing?.phone ?? '')
-    setAddress(editing?.address ?? '')
-    setNotes(editing?.notes ?? '')
-    setIsActive(editing?.isActive ?? true)
+  const seedForm = (s: Supplier | null) => {
+    setName(s?.name ?? '')
+    setEmail(s?.email ?? '')
+    setPhone(s?.phone ?? '')
+    setAddress(s?.address ?? '')
+    setNotes(s?.notes ?? '')
+    setIsActive(s?.isActive ?? true)
     setIsSubmitting(false)
-  }, [editing, modalOpen])
+  }
 
   if (!isAuthenticated) return null
 
@@ -99,6 +98,7 @@ export default function SuppliersPage() {
       return
     }
     setEditing(null)
+    seedForm(null)
     setModalOpen(true)
   }
 
@@ -112,6 +112,7 @@ export default function SuppliersPage() {
       return
     }
     setEditing(s)
+    seedForm(s)
     setModalOpen(true)
   }
 
@@ -206,13 +207,6 @@ export default function SuppliersPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
-          <p className="text-muted-foreground mt-2">Manage your suppliers</p>
-        </div>
-      </div>
-
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -320,7 +314,13 @@ export default function SuppliersPage() {
         </div>
       </div>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open)
+          if (!open) setIsSubmitting(false)
+        }}
+      >
         <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>

@@ -2,13 +2,13 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Sidebar, TopNav } from '@/components/sidebar'
-import { TopHeader } from '@/components/top-header'
+import { PageHeader, TopHeader } from '@/components/top-header'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useGetBillingSubscriptionQuery, useListBillingPlansQuery } from '@/redux/api/billing-api'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
 function BillingBanner() {
@@ -21,7 +21,6 @@ function BillingBanner() {
   const { data: plans = [] } = useListBillingPlansQuery({ shopId: currentShop?.id ?? '' }, { skip })
 
   if (!user || !currentShop) return null
-
   const now = Date.now()
   const endMs = subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).getTime() : 0
   const daysLeft = endMs ? Math.ceil((endMs - now) / (24 * 60 * 60 * 1000)) : null
@@ -90,10 +89,12 @@ export function LayoutContent({
   const { user } = useAuth()
   const { currentShop } = useShop()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
   const [showNavigationOverlay, setShowNavigationOverlay] = useState(false)
   const navigationOverlayTimerRef = useRef<number | null>(null)
+  const navigationResetTimerRef = useRef<number | null>(null)
   const [navLayout, setNavLayout] = useState<'sidebar' | 'topbar'>('sidebar')
 
   const { data: subscription } = useGetBillingSubscriptionQuery(
@@ -122,12 +123,22 @@ export function LayoutContent({
 
   useEffect(() => {
     setIsNavigating(false)
-  }, [pathname])
+  }, [pathname, searchParams])
+
+  useEffect(() => {
+    const onHashChange = () => setIsNavigating(false)
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
 
   useEffect(() => {
     if (navigationOverlayTimerRef.current) {
       window.clearTimeout(navigationOverlayTimerRef.current)
       navigationOverlayTimerRef.current = null
+    }
+    if (navigationResetTimerRef.current) {
+      window.clearTimeout(navigationResetTimerRef.current)
+      navigationResetTimerRef.current = null
     }
     if (!isNavigating) {
       setShowNavigationOverlay(false)
@@ -136,22 +147,35 @@ export function LayoutContent({
     navigationOverlayTimerRef.current = window.setTimeout(() => {
       setShowNavigationOverlay(true)
     }, 150)
+    navigationResetTimerRef.current = window.setTimeout(() => {
+      setIsNavigating(false)
+    }, 10000)
     return () => {
       if (navigationOverlayTimerRef.current) {
         window.clearTimeout(navigationOverlayTimerRef.current)
         navigationOverlayTimerRef.current = null
       }
+      if (navigationResetTimerRef.current) {
+        window.clearTimeout(navigationResetTimerRef.current)
+        navigationResetTimerRef.current = null
+      }
     }
   }, [isNavigating])
 
   useEffect(() => {
+    let active = true
     const setNavigatingIfDifferentUrl = (urlLike: string | URL | null | undefined) => {
       if (!urlLike) return
       const current = new URL(window.location.href)
       const next = new URL(String(urlLike), current.href)
       if (next.origin !== current.origin) return
       if (next.pathname === current.pathname && next.search === current.search && next.hash === current.hash) return
-      setIsNavigating(true)
+      const schedule =
+        typeof queueMicrotask === 'function' ? queueMicrotask : (cb: () => void) => Promise.resolve().then(cb)
+      schedule(() => {
+        if (!active) return
+        setIsNavigating(true)
+      })
     }
 
     const originalPushState = window.history.pushState
@@ -168,6 +192,7 @@ export function LayoutContent({
     } as any
 
     return () => {
+      active = false
       window.history.pushState = originalPushState
       window.history.replaceState = originalReplaceState
     }
@@ -308,6 +333,7 @@ export function LayoutContent({
             <div className="h-10" />
           </>
         ) : null}
+        {/* <PageHeader /> */}
         {children}
       </main>
     </>

@@ -253,11 +253,7 @@ export default function SupplierBillsPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Supplier Bills</h1>
-          <p className="text-muted-foreground mt-2">Track supplier bills and payments</p>
-        </div>
+      <div className="flex items-center justify-end gap-2">
         <Button type="button" className="h-9 gap-2 rounded-lg" onClick={openCreate} disabled={!canManageInventory || !currentShop}>
           <Plus className="h-4 w-4" />
           New Bill
@@ -651,4 +647,3 @@ export default function SupplierBillsPage() {
     </div>
   )
 }
-

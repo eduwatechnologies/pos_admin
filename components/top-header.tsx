@@ -29,9 +29,17 @@ import { useGetBillingSubscriptionQuery } from '@/redux/api/billing-api'
 import { cn } from '@/lib/utils'
 
 function getTitleFromPath(pathname: string) {
+  if (pathname.startsWith('/supplier-bills')) return 'Supplier Bills'
+  if (pathname.startsWith('/suppliers')) return 'Suppliers'
+  if (pathname.startsWith('/purchases')) return 'Purchases'
+  if (pathname.startsWith('/expenses')) return 'Expenses'
+  if (pathname.startsWith('/audit')) return 'Audit Log'
+  if (pathname.startsWith('/reports')) return 'Reports'
   if (pathname.startsWith('/employees/performance')) return 'Employee Performance'
   if (pathname.startsWith('/employees')) return 'Employees'
   if (pathname.startsWith('/inventory')) return 'Inventory'
+  if (pathname.startsWith('/categories')) return 'Categories'
+  if (pathname.startsWith('/customers')) return 'Customers'
   if (pathname.startsWith('/terminal')) return 'POS Terminal'
   if (pathname.startsWith('/receipts')) return 'Receipts'
   if (pathname.startsWith('/analytics')) return 'Analytics'
@@ -41,11 +49,91 @@ function getTitleFromPath(pathname: string) {
   return 'Kounter POS'
 }
 
+type PageHeaderMeta = {
+  title: string
+  description?: string
+}
+
+function getPageHeaderFromPath(pathname: string): PageHeaderMeta | null {
+  if (pathname === '/dashboard') {
+    return { title: 'Dashboard', description: 'Sales overview and key performance metrics.' }
+  }
+  if (pathname === '/analytics') {
+    return { title: 'Analytics', description: 'Detailed sales insights and performance metrics' }
+  }
+  if (pathname === '/reports') {
+    return { title: 'Reports', description: 'Sales and finance report summary.' }
+  }
+  if (pathname === '/inventory') {
+    return { title: 'Inventory', description: 'Manage your products and stock levels' }
+  }
+  if (pathname === '/categories') {
+    return { title: 'Categories', description: 'Organize your products by category' }
+  }
+  if (pathname === '/customers') {
+    return { title: 'Customers', description: 'Manage your customer directory' }
+  }
+  if (pathname === '/employees') {
+    return { title: 'Employees', description: 'Manage your team members' }
+  }
+  if (pathname === '/employees/performance') {
+    return { title: 'Employee Performance', description: 'Sales performance across all employees' }
+  }
+  if (pathname === '/receipts') {
+    return { title: 'Receipts', description: 'View and manage sales receipts' }
+  }
+  if (pathname === '/stores') {
+    return { title: 'Stores', description: 'Create and manage your stores.' }
+  }
+  if (pathname === '/suppliers') {
+    return { title: 'Suppliers', description: 'Manage your suppliers' }
+  }
+  if (pathname === '/supplier-bills') {
+    return { title: 'Supplier Bills', description: 'Track supplier bills and payments' }
+  }
+  if (pathname === '/purchases') {
+    return { title: 'Purchases', description: 'Record purchases and update stock' }
+  }
+  if (pathname === '/expenses') {
+    return { title: 'Expenses', description: 'Record and manage expenses' }
+  }
+  if (pathname === '/audit') {
+    return { title: 'Audit Log', description: 'System activity for this shop' }
+  }
+  if (pathname === '/settings/system') {
+    return { title: 'Settings', description: 'System configuration.' }
+  }
+  if (pathname === '/settings/general') {
+    return { title: 'Settings', description: 'General business information.' }
+  }
+  if (pathname === '/settings/permissions') {
+    return { title: 'Settings', description: 'Role permissions.' }
+  }
+  return null
+}
+
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   const first = parts[0]?.[0] ?? 'U'
   const second = parts[1]?.[0] ?? ''
   return (first + second).toUpperCase()
+}
+
+export function PageHeader({ className }: { className?: string }) {
+  const pathname = usePathname()
+  const meta = getPageHeaderFromPath(pathname)
+  if (!meta) return null
+
+  return (
+    <div className={cn('px-4 md:px-8 pt-6 pb-2', className)}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-3xl font-bold tracking-tight">{meta.title}</h1>
+          {meta.description ? <p className="text-muted-foreground mt-2">{meta.description}</p> : null}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function TopHeader() {
@@ -54,7 +142,11 @@ export function TopHeader() {
   const { user, logout } = useAuth()
   const { currentShop } = useShop()
   const [billingOpen, setBillingOpen] = useState(false)
-  const [navLayout, setNavLayout] = useState<'sidebar' | 'topbar'>('sidebar')
+  const [navLayout, setNavLayout] = useState<'sidebar' | 'topbar'>(() => {
+    if (typeof window === 'undefined') return 'sidebar'
+    const saved = window.localStorage.getItem('nav_layout')
+    return saved === 'topbar' ? 'topbar' : 'sidebar'
+  })
 
   const isAuthed = Boolean(user)
   const skipBilling = !isAuthed || !currentShop
@@ -83,15 +175,8 @@ export function TopHeader() {
     const already = sessionStorage.getItem(key)
     if (already) return
     sessionStorage.setItem(key, '1')
-    setBillingOpen(true)
+    window.setTimeout(() => setBillingOpen(true), 0)
   }, [canPrompt, currentShop?.id])
-
-  useEffect(() => {
-    if (!user) return
-    if (typeof window === 'undefined') return
-    const saved = window.localStorage.getItem('nav_layout')
-    setNavLayout(saved === 'topbar' ? 'topbar' : 'sidebar')
-  }, [user])
 
   if (!user) return null
 
