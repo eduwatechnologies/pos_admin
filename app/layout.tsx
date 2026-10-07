@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Analytics } from '@vercel/analytics/next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from '@/context/auth-context'
@@ -35,7 +36,9 @@ export default function RootLayout({
         <ReduxProvider>
           <AuthProvider>
             <ShopProvider>
-              <LayoutContent>{children}</LayoutContent>
+              <Suspense fallback={null}>
+                <LayoutContent>{children}</LayoutContent>
+              </Suspense>
             </ShopProvider>
           </AuthProvider>
         </ReduxProvider>

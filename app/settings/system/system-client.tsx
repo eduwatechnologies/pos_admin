@@ -83,15 +83,15 @@ export default function SettingsSystemClient() {
     setSelectedPlanId(plans[0].id)
   }, [plans, selectedPlanId])
 
+  const paymentReference = searchParams.get('reference') ?? searchParams.get('trxref') ?? null
+
   useEffect(() => {
-    if (!currentShop) return
-    const ref = searchParams.get('reference') ?? searchParams.get('trxref')
-    if (!ref) return
+    if (!currentShop || !paymentReference) return
 
     ;(async () => {
       let ok = false
       try {
-        await verifyPaystack({ shopId: currentShop.id, reference: ref }).unwrap()
+        await verifyPaystack({ shopId: currentShop.id, reference: paymentReference }).unwrap()
         ok = true
         toast({ title: 'Payment verified', description: 'Your subscription has been updated.' })
       } catch (err) {
@@ -107,7 +107,7 @@ export default function SettingsSystemClient() {
         router.replace(ok ? '/dashboard' : '/settings/system')
       }
     })()
-  }, [currentShop, router, searchParams, toast, verifyPaystack])
+  }, [currentShop, paymentReference, router, toast, verifyPaystack])
 
   const isDirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial])
 

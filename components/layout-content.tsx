@@ -247,6 +247,15 @@ export function LayoutContent({
     if (!currentShop) return
     if (user.role === 'super_admin') return
 
+    const fallback =
+      canUse('dashboard')
+        ? '/dashboard'
+        : canUse('terminal')
+          ? '/terminal'
+          : canUse('receipts')
+            ? '/receipts'
+            : '/auth/login'
+
     if (pathname.startsWith('/terminal')) {
       const graceMs = 3 * 24 * 60 * 60 * 1000
       const now = Date.now()
@@ -255,9 +264,14 @@ export function LayoutContent({
       const withinGrace = status === 'past_due' && endMs && now < endMs + graceMs
       const allowed = status === 'active' || withinGrace
 
-      if (!allowed && pathname !== '/settings/system') {
-        setIsNavigating(true)
-        router.push('/settings/system')
+      if (!allowed) {
+        const settingsAllowed = canUse('settings')
+        const settingsFallback = settingsAllowed ? '/settings/system' : fallback
+
+        if (pathname !== settingsFallback) {
+          setIsNavigating(true)
+          router.push(settingsFallback)
+        }
         return
       }
     }
@@ -285,20 +299,11 @@ export function LayoutContent({
     if (!key) return
     if (canUse(key)) return
 
-    const fallback =
-      canUse('dashboard')
-        ? '/dashboard'
-        : canUse('terminal')
-          ? '/terminal'
-          : canUse('receipts')
-            ? '/receipts'
-            : '/auth/login'
-
     if (pathname !== fallback) {
       setIsNavigating(true)
       router.push(fallback)
     }
-  }, [canUse, currentShop, pathname, router, user])
+  }, [canUse, currentShop, pathname, router, subscription, user])
 
   return (
     <>
