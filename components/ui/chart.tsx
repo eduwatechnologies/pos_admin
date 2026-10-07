@@ -183,6 +183,7 @@ function ChartTooltipContent({
           const key = `${nameKey || item.name || item.dataKey || 'value'}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
           const indicatorColor = color || item.payload.fill || item.color
+          const Icon = itemConfig?.icon as React.ComponentType<{ className?: string }> | undefined
 
           return (
             <div
@@ -196,8 +197,8 @@ function ChartTooltipContent({
                 formatter(item.value, item.name, item, index, item.payload)
               ) : (
                 <>
-                  {itemConfig?.icon ? (
-                    <itemConfig.icon className="size-3 text-muted-foreground" />
+                  {Icon ? (
+                    <Icon className="size-3 text-muted-foreground" />
                   ) : (
                     !hideIndicator && (
                       <div

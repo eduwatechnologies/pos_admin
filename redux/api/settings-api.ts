@@ -17,6 +17,13 @@ export const settingsApi = baseApi.injectEndpoints({
         name: string
         taxRateBps: number
         allowNegativeStock: boolean
+        storefrontEnabled: boolean
+        storefrontSlug: string | null
+        storefrontDescription: string | null
+        storefrontPrimaryColor: string
+        storefrontBannerUrl: string | null
+        storefrontDeliveryFeeCents: number
+        storefrontPickupOnly: boolean
         rolePermissions: RolePermissions
       },
       { shopId: string }
@@ -32,6 +39,13 @@ export const settingsApi = baseApi.injectEndpoints({
           name: String(s?.name ?? ''),
           taxRateBps: Number(s?.taxRateBps ?? 0),
           allowNegativeStock: s?.allowNegativeStock === true,
+          storefrontEnabled: s?.storefrontEnabled === true,
+          storefrontSlug: s?.storefrontSlug ? String(s.storefrontSlug) : null,
+          storefrontDescription: s?.storefrontDescription ? String(s.storefrontDescription) : null,
+          storefrontPrimaryColor: s?.storefrontPrimaryColor ? String(s.storefrontPrimaryColor) : '#0f172a',
+          storefrontBannerUrl: s?.storefrontBannerUrl ? String(s.storefrontBannerUrl) : null,
+          storefrontDeliveryFeeCents: Number(s?.storefrontDeliveryFeeCents ?? 0),
+          storefrontPickupOnly: s?.storefrontPickupOnly !== false,
           rolePermissions: (s?.rolePermissions ?? {
             admin: {
               dashboard: true,
@@ -67,6 +81,13 @@ export const settingsApi = baseApi.injectEndpoints({
         name: string
         taxRateBps: number
         allowNegativeStock: boolean
+        storefrontEnabled: boolean
+        storefrontSlug: string | null
+        storefrontDescription: string | null
+        storefrontPrimaryColor: string
+        storefrontBannerUrl: string | null
+        storefrontDeliveryFeeCents: number
+        storefrontPickupOnly: boolean
         rolePermissions: RolePermissions
       },
       {
@@ -79,6 +100,13 @@ export const settingsApi = baseApi.injectEndpoints({
           phone: string
           taxRateBps: number
           allowNegativeStock: boolean
+          storefrontEnabled: boolean
+          storefrontSlug: string | null
+          storefrontDescription: string | null
+          storefrontPrimaryColor: string
+          storefrontBannerUrl: string | null
+          storefrontDeliveryFeeCents: number
+          storefrontPickupOnly: boolean
           rolePermissions: RolePermissions
         }>
       }
@@ -94,6 +122,13 @@ export const settingsApi = baseApi.injectEndpoints({
           name: String(s?.name ?? ''),
           taxRateBps: Number(s?.taxRateBps ?? 0),
           allowNegativeStock: s?.allowNegativeStock === true,
+          storefrontEnabled: s?.storefrontEnabled === true,
+          storefrontSlug: s?.storefrontSlug ? String(s.storefrontSlug) : null,
+          storefrontDescription: s?.storefrontDescription ? String(s.storefrontDescription) : null,
+          storefrontPrimaryColor: s?.storefrontPrimaryColor ? String(s.storefrontPrimaryColor) : '#0f172a',
+          storefrontBannerUrl: s?.storefrontBannerUrl ? String(s.storefrontBannerUrl) : null,
+          storefrontDeliveryFeeCents: Number(s?.storefrontDeliveryFeeCents ?? 0),
+          storefrontPickupOnly: s?.storefrontPickupOnly !== false,
           rolePermissions: (s?.rolePermissions ?? {
             admin: {
               dashboard: true,

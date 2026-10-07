@@ -13,6 +13,7 @@ export type ApiShop = {
   location: string
   address?: string
   phone?: string
+  currency?: string
   createdAt: Date
 }
 
@@ -101,6 +102,7 @@ export function mapShop(s: any): ApiShop {
     location: address ?? '',
     address,
     phone: s?.phone ? String(s.phone) : undefined,
+    currency: s?.currency ? String(s.currency) : undefined,
     createdAt: toIsoDate(s?.createdAt),
   }
 }

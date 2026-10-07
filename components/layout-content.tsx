@@ -181,15 +181,15 @@ export function LayoutContent({
     const originalPushState = window.history.pushState
     const originalReplaceState = window.history.replaceState
 
-    window.history.pushState = function pushState(data, title, url) {
+    window.history.pushState = function pushState(this: History, data: any, title: string, url?: string | URL | null) {
       setNavigatingIfDifferentUrl(url)
       return originalPushState.apply(this, [data, title, url] as any)
-    } as any
+    }
 
-    window.history.replaceState = function replaceState(data, title, url) {
+    window.history.replaceState = function replaceState(this: History, data: any, title: string, url?: string | URL | null) {
       setNavigatingIfDifferentUrl(url)
       return originalReplaceState.apply(this, [data, title, url] as any)
-    } as any
+    }
 
     return () => {
       active = false

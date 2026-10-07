@@ -11,7 +11,10 @@ import productsReducer from '@/redux/features/products/products-slice'
 import shopsReducer from '@/redux/features/shops/shops-slice'
 
 const isSerializable = (value: unknown) => value instanceof Date || isPlain(value)
-const getEntries = (value: unknown) => (isPlain(value) ? Object.entries(value) : [])
+const getEntries = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return []
+  return Object.entries(value as Record<string, unknown>)
+}
 
 export const store = configureStore({
   reducer: {

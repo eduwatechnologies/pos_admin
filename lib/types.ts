@@ -8,6 +8,7 @@ export interface Shop {
   location: string
   address?: string
   phone?: string
+  currency?: string
   createdAt: Date
 }
 
@@ -59,7 +60,7 @@ export interface ReceiptItem {
 export interface Receipt {
   id: string
   date: Date
-  customerId?: string
+  customerId?: string | null
   customerName?: string
   items: ReceiptItem[]
   subtotal: number

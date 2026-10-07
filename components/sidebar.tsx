@@ -92,6 +92,7 @@ export function Sidebar() {
       label: 'Sales',
       items: [
         { href: '/terminal', label: 'Terminal', icon: ShoppingCart, perm: 'terminal' },
+        { href: '/storefront-orders', label: 'Online Orders', icon: ClipboardList, perm: 'settings' },
         { href: '/receipts', label: 'Sales', icon: Receipt, perm: 'receipts' },
       ],
     },
