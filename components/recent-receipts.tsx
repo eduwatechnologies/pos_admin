@@ -72,7 +72,7 @@ export function RecentReceipts({ receipts }: RecentReceiptsProps) {
                           </div>
                         </td>
                         <td className="px-5 py-3.5 text-sm text-muted-foreground">
-                          {receipt.date.toLocaleDateString()} {receipt.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(receipt.date).toLocaleDateString()} {new Date(receipt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="px-5 py-3.5 text-sm text-muted-foreground">
                           {receipt.customerName ? receipt.customerName : 'Walk-in'}

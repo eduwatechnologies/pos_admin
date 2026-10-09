@@ -191,7 +191,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1 sidebar-scrollbar">
           {groups.map((group) => {
             const visible = group.items.filter((item) => (item.perm ? canUse(item.perm) : true))
             if (visible.length === 0) return null

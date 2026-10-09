@@ -159,7 +159,7 @@ export default function TerminalPage() {
       })
       .map((p) => {
         const localDelta = localStockDeltas[p._id] ?? 0
-        const effectiveQty = Math.max(0, (p.qty ?? 0) + localDelta)
+        const effectiveQty = Math.max(0, (p.quantity ?? 0) + localDelta)
         return effectiveQty > 0 ? { ...p, effectiveQty } : null
       })
       .filter((p): p is typeof p & { effectiveQty: number } => p !== null)

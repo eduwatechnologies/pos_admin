@@ -86,7 +86,9 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
       data-slot="dialog-header"
       className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
       {...props}
-    />
+    >
+      {props.children}
+    </div>
   )
 }
 
@@ -99,7 +101,9 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
         className,
       )}
       {...props}
-    />
+    >
+      {props.children}
+    </div>
   )
 }
 
@@ -112,7 +116,9 @@ function DialogTitle({
       data-slot="dialog-title"
       className={cn('text-lg leading-none font-semibold', className)}
       {...props}
-    />
+    >
+      {props.children}
+    </DialogPrimitive.Title>
   )
 }
 
@@ -125,7 +131,9 @@ function DialogDescription({
       data-slot="dialog-description"
       className={cn('text-muted-foreground text-sm', className)}
       {...props}
-    />
+    >
+      {props.children}
+    </DialogPrimitive.Description>
   )
 }
 

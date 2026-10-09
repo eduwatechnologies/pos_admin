@@ -22,7 +22,7 @@ export interface OfflineReceipt {
   status: 'pending' | 'completed' | 'refunded'
   createdAt: string
   paidAt: string
-  isOffline: true
+  isOffline: boolean
 }
 
 type ReceiptsState = {
