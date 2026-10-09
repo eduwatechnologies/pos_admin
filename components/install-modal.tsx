@@ -24,7 +24,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useInstallPrompt } from '@/components/install-prompt'
+import { useInstallModal } from '@/components/install-modal-context'
 import { cn } from '@/lib/utils'
 
 type Platform = 'chrome-desktop' | 'safari-desktop' | 'safari-ios' | 'chrome-android' | 'edge-desktop' | 'other'
@@ -182,7 +182,22 @@ type InstallModalDialogProps = {
 }
 
 export function InstallModalDialog({ open, onOpenChange }: InstallModalDialogProps) {
-  const { install, isAvailable, isStandalone } = useInstallPrompt()
+  const { isOpen, setIsOpen, isStandalone, isAvailable } = useInstallModal()
+  const install = async () => {
+    const prompt = (typeof window !== 'undefined' ? window.__kounterInstallPrompt : null)
+    if (!prompt) return false
+    try {
+      await prompt.prompt()
+      const { outcome } = await prompt.userChoice
+      if (outcome === 'accepted') {
+        setIsOpen(false)
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
   const [isInstalling, setIsInstalling] = useState(false)
   const [installState, setInstallState] = useState<'idle' | 'success' | 'dismissed'>('idle')
   const [activeTab, setActiveTab] = useState<Platform>('chrome-desktop')
@@ -202,22 +217,15 @@ export function InstallModalDialog({ open, onOpenChange }: InstallModalDialogPro
 
   const closeReset = useCallback(() => {
     setInstallState('idle')
-    onOpenChange(false)
-  }, [onOpenChange])
-
-  const handleInstall = async () => {
-    setIsInstalling(true)
-    try {
-      const ok = await install()
-      if (ok) {
-        setInstallState('success')
-      }
-    } finally {
-      setIsInstalling(false)
-    }
-  }
+    setIsOpen(false)
+  }, [setIsOpen])
 
   const handleManualClose = () => {
+    if (isStandalone) {
+      try {
+        localStorage.setItem('kounter-install-dismissed-until', 'never')
+      } catch {}
+    }
     closeReset()
   }
 

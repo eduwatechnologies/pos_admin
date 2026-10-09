@@ -1,12 +1,14 @@
 'use client'
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useEffect, useState } from 'react'
 
 type InstallModalContextValue = {
   isOpen: boolean
   open: () => void
   close: () => void
   setIsOpen: (open: boolean) => void
+  isStandalone: boolean
+  isAvailable: boolean
 }
 
 const InstallModalContext = createContext<InstallModalContextValue | null>(null)
@@ -37,6 +39,22 @@ function isDismissed(cfg: DismissConfig | null): boolean {
   return Date.now() < cfg.reminderUntil
 }
 
+function isStandaloneNow(): boolean {
+  if (typeof window === 'undefined') return false
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  )
+}
+
+function persistNever() {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DISMISS_KEY, 'never')
+    }
+  } catch {}
+}
+
 export function InstallModalProvider({
   children,
   autoShowDelayMs = 4000,
@@ -51,24 +69,12 @@ export function InstallModalProvider({
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    setBootstrapped(true)
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
+
+    const standalone = isStandaloneNow()
     setIsStandalone(standalone)
+    if (standalone) persistNever()
 
-    const handler = () => {
-      const nextStandalone =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true
-      if (nextStandalone) setIsStandalone(true)
-    }
-    window.addEventListener('appinstalled', handler)
-    return () => window.removeEventListener('appinstalled', handler)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
+    setBootstrapped(true)
 
     const onPrompt = (e: Event) => {
       e.preventDefault()
@@ -77,14 +83,32 @@ export function InstallModalProvider({
     }
     window.addEventListener('beforeinstallprompt', onPrompt)
 
-    const check = () => {
-      setIsAvailable(!!window.__kounterInstallPrompt)
+    const onInstalled = () => {
+      setIsStandalone(true)
+      persistNever()
     }
-    const tId = window.setTimeout(check, 100)
+    window.addEventListener('appinstalled', onInstalled)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', onPrompt)
-      window.clearTimeout(tId)
+      window.removeEventListener('appinstalled', onInstalled)
+    }
+  }, [])
+
+  // Re-check standalone on focus (some browsers update display-mode lazily)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => {
+      if (isStandaloneNow()) {
+        setIsStandalone(true)
+        persistNever()
+      }
+    }
+    window.addEventListener('focus', check)
+    window.addEventListener('storage', check)
+    return () => {
+      window.removeEventListener('focus', check)
+      window.removeEventListener('storage', check)
     }
   }, [])
 
@@ -109,6 +133,8 @@ export function InstallModalProvider({
     open,
     close,
     setIsOpen,
+    isStandalone,
+    isAvailable,
   }
 
   return (

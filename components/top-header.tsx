@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { useGetBillingSubscriptionQuery } from '@/redux/api/billing-api'
 import { cn } from '@/lib/utils'
-import { useInstallPrompt } from '@/components/install-prompt'
+import { useInstallModal } from '@/components/install-modal-context'
 import { useInstallModal } from '@/components/install-modal-context'
 
 function getTitleFromPath(pathname: string) {
@@ -149,7 +149,7 @@ export function TopHeader() {
     const saved = window.localStorage.getItem('nav_layout')
     return saved === 'topbar' ? 'topbar' : 'sidebar'
   })
-  const { isStandalone } = useInstallPrompt()
+  const { isStandalone } = useInstallModal()
   const { open: openInstallModal } = useInstallModal()
 
   const isAuthed = Boolean(user)
