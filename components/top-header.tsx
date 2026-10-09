@@ -28,7 +28,7 @@ import {
 import { useGetBillingSubscriptionQuery } from '@/redux/api/billing-api'
 import { cn } from '@/lib/utils'
 import { useInstallModal } from '@/components/install-modal-context'
-import { useInstallModal } from '@/components/install-modal-context'
+import { OfflineIndicator } from '@/components/offline-indicator'
 
 function getTitleFromPath(pathname: string) {
   if (pathname.startsWith('/supplier-bills')) return 'Supplier Bills'
@@ -202,6 +202,7 @@ export function TopHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          <OfflineIndicator />
           {!isStandalone && (
             <Button
               variant="outline"

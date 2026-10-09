@@ -46,6 +46,13 @@ import { useListProductsQuery } from '@/redux/api/products-api'
 import { useCreateReceiptMutation } from '@/redux/api/receipts-api'
 import { useCreateCustomerMutation, useListCustomersQuery } from '@/redux/api/customers-api'
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
+import { enqueue } from '@/redux/offline/offline-queue-slice'
+import { applyLocalStockDelta, selectLocalStockDeltas, selectEffectiveStock } from '@/redux/features/products/products-slice'
+import { addOfflineReceipt, removeOfflineReceipt } from '@/redux/features/receipts/receipts-slice'
+import { v4 as uuidv4 } from 'uuid'
+import { useOnlineStatus } from '@/redux/offline/offline-hooks'
+import { Wifi, WifiOff, Loader2 } from 'lucide-react'
 
 type CartLine = {
   productId: string
@@ -54,7 +61,7 @@ type CartLine = {
   barcode?: string
   imageUrl?: string
   unitPrice: number
-  availableQty: number
+  effectiveQty: number
   qty: number
 }
 
@@ -68,8 +75,10 @@ type CheckoutStep = 'idle' | 'payment' | 'processing' | 'complete'
 export default function TerminalPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const dispatch = useAppDispatch()
   const { isAuthenticated, user } = useAuth()
   const { currentShop } = useShop()
+  const isOnline = useOnlineStatus()
 
   const walkInName = 'Walk-in'
 
@@ -119,6 +128,8 @@ export default function TerminalPage() {
   const [createReceipt, { isLoading: isCheckingOut }] = useCreateReceiptMutation()
   const [createCustomer, { isLoading: isCreatingCustomer }] = useCreateCustomerMutation()
 
+  const localStockDeltas = useAppSelector(selectLocalStockDeltas)
+
   const categories = useMemo(() => {
     const set = new Set<string>()
     set.add('General')
@@ -136,16 +147,23 @@ export default function TerminalPage() {
 
   const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return products.filter((p) => {
-      const matchesCategory = activeCategory === 'All' || (p.category ?? 'General') === activeCategory
-      if (!matchesCategory) return false
-      if (!q) return true
-      const name = (p.name ?? '').toLowerCase()
-      const sku = (p.sku ?? '').toLowerCase()
-      const barcode = (p.barcode ?? '').toLowerCase()
-      return name.includes(q) || sku.includes(q) || barcode.includes(q)
-    })
-  }, [activeCategory, products, search])
+    return products
+      .filter((p) => {
+        const matchesCategory = activeCategory === 'All' || (p.category ?? 'General') === activeCategory
+        if (!matchesCategory) return false
+        if (!q) return true
+        const name = (p.name ?? '').toLowerCase()
+        const sku = (p.sku ?? '').toLowerCase()
+        const barcode = (p.barcode ?? '').toLowerCase()
+        return name.includes(q) || sku.includes(q) || barcode.includes(q)
+      })
+      .map((p) => {
+        const localDelta = localStockDeltas[p._id] ?? 0
+        const effectiveQty = Math.max(0, (p.qty ?? 0) + localDelta)
+        return effectiveQty > 0 ? { ...p, effectiveQty } : null
+      })
+      .filter((p): p is typeof p & { effectiveQty: number } => p !== null)
+  }, [activeCategory, products, search, localStockDeltas])
 
   const totals = useMemo(() => {
     const lines = Object.values(cart)
@@ -189,9 +207,10 @@ export default function TerminalPage() {
 
       setCart((prev) => {
         const existing = prev[match.id]
-        const availableQty = Number(match.quantity ?? 0)
-        const nextQty = Math.min(availableQty, (existing?.qty ?? 0) + 1)
-        if (availableQty <= 0 || nextQty <= 0) return prev
+        const productWithEffective = filteredProducts.find((p) => p._id === match.id)
+        const effectiveQty = productWithEffective?.effectiveQty ?? Number(match.quantity ?? 0)
+        const nextQty = Math.min(effectiveQty, (existing?.qty ?? 0) + 1)
+        if (effectiveQty <= 0 || nextQty <= 0) return prev
         return {
           ...prev,
           [match.id]: {
@@ -200,7 +219,7 @@ export default function TerminalPage() {
             sku: match.sku ?? '',
             barcode: match.barcode,
             unitPrice: Number(match.price ?? 0),
-            availableQty,
+            effectiveQty,
             qty: nextQty,
           },
         }
@@ -300,9 +319,10 @@ export default function TerminalPage() {
   const addToCart = (product: (typeof products)[number]) => {
     setCart((prev) => {
       const existing = prev[product.id]
-      const availableQty = Number(product.quantity ?? 0)
-      const nextQty = Math.min(availableQty, (existing?.qty ?? 0) + 1)
-      if (availableQty <= 0 || nextQty <= 0) return prev
+      const productWithEffective = filteredProducts.find((p) => p._id === product.id)
+      const effectiveQty = productWithEffective?.effectiveQty ?? Number(product.quantity ?? 0)
+      const nextQty = Math.min(effectiveQty, (existing?.qty ?? 0) + 1)
+      if (effectiveQty <= 0 || nextQty <= 0) return prev
 
       return {
         ...prev,
@@ -313,7 +333,7 @@ export default function TerminalPage() {
           barcode: product.barcode,
           imageUrl: product.imageUrl,
           unitPrice: Number(product.price ?? 0),
-          availableQty,
+          effectiveQty,
           qty: nextQty,
         },
       }
@@ -324,7 +344,7 @@ export default function TerminalPage() {
     setCart((prev) => {
       const line = prev[productId]
       if (!line) return prev
-      const clamped = Math.max(0, Math.min(line.availableQty, Math.floor(nextQty)))
+      const clamped = Math.max(0, Math.min(line.effectiveQty, Math.floor(nextQty)))
       if (clamped === 0) {
         const { [productId]: _removed, ...rest } = prev
         return rest
@@ -357,7 +377,7 @@ export default function TerminalPage() {
     setCheckoutStep('payment')
   }
 
-  const handlePayment = async (method: 'cash' | 'card' | 'transfer') => {
+const handlePayment = async (method: 'cash' | 'card' | 'transfer') => {
     if (!currentShop) return
     setPaymentMethod(method)
     setCheckoutStep('processing')
@@ -376,19 +396,67 @@ export default function TerminalPage() {
       lineTotalCents: Math.round(l.unitPrice * 100) * l.qty,
     }))
 
-    try {
-      const result = await createReceipt({
-        shopId: currentShop.id,
-        input: {
-          items,
-          customerId,
-          customerName: finalCustomerName,
-          paymentMethod: method,
-          taxCents,
-        },
-      }).unwrap()
+    // Build the receipt payload
+    const receiptPayload = {
+      shopId: currentShop.id,
+      input: {
+        items,
+        customerId,
+        customerName: finalCustomerName,
+        paymentMethod: method,
+        taxCents,
+      },
+    }
 
-      const receiptId = (result as any).id || (result as any).localId || 'unknown'
+    // Compute stock deltas for optimistic update
+    const stockDeltas: Record<string, number> = {}
+    Object.values(cart).forEach((line) => {
+      stockDeltas[line.productId] = (stockDeltas[line.productId] ?? 0) - line.qty
+    })
+
+    const localReceiptId = uuidv4()
+    const now = new Date().toISOString()
+
+    // Optimistic updates
+    dispatch(applyLocalStockDelta({ productId: '', delta: 0 })) // trigger re-render for selector
+    Object.entries(stockDeltas).forEach(([productId, delta]) => {
+      dispatch(applyLocalStockDelta({ productId, delta }))
+    })
+
+    const offlineReceipt = {
+      _id: localReceiptId,
+      localId: localReceiptId,
+      shopId: currentShop.id,
+      items: items.map((i) => ({
+        productId: i.productId,
+        quantity: i.qty,
+        unitPriceCents: i.unitPriceCents,
+        totalCents: i.lineTotalCents,
+      })),
+      subtotalCents: Math.round(totals.subtotal * 100),
+      taxCents,
+      totalCents: Math.round(totals.total * 100),
+      paymentMethod: method,
+      paymentDetails: undefined,
+      customerId: customerId || undefined,
+      customerName: finalCustomerName,
+      status: 'completed' as const,
+      createdAt: now,
+      paidAt: now,
+      isOffline: true,
+    }
+
+    dispatch(addOfflineReceipt(offlineReceipt))
+
+    try {
+      const result = await createReceipt(receiptPayload).unwrap()
+      const receiptId = (result as any).id || localReceiptId
+
+      // Success - remove optimistic state
+      Object.keys(stockDeltas).forEach((productId) => {
+        dispatch(applyLocalStockDelta({ productId, delta: -stockDeltas[productId] }))
+      })
+      dispatch(removeOfflineReceipt(localReceiptId))
 
       setLastReceipt({
         id: receiptId,
@@ -410,8 +478,8 @@ export default function TerminalPage() {
         cashierId: user?.id || null,
         cashierName: user?.name || null,
         status: 'completed',
-        createdAt: new Date().toISOString(),
-        date: new Date().toISOString(),
+        createdAt: now,
+        date: now,
         source: 'pos',
       } as any)
       setReceiptOpen(false)
@@ -424,12 +492,72 @@ export default function TerminalPage() {
         description: `Receipt ${receiptId.slice(-8).toUpperCase()} • ${formatMoney(totals.total)}`,
       })
     } catch (err) {
-      setCheckoutStep('payment')
-      toast({
-        title: 'Checkout failed',
-        description: err instanceof Error ? err.message : 'Unable to complete the sale',
-        variant: 'destructive',
-      })
+      // Check if it's a network error
+      const isNetworkErr = err && typeof err === 'object' && (
+        (err as any).name === 'NetworkError' ||
+        (err as any).name === 'TypeError' ||
+        (err as any).message?.includes('fetch') ||
+        (err as any).message?.includes('network') ||
+        (err as any).status === undefined
+      )
+
+      if (isNetworkErr) {
+        // Enqueue for later sync
+        dispatch(enqueue({
+          type: 'receipt.create',
+          shopId: currentShop.id,
+          payload: receiptPayload,
+          optimistic: { stockDeltas },
+        }))
+
+        // Still show success to cashier since we've optimistically updated
+        setLastReceipt({
+          id: localReceiptId,
+          shopId: currentShop.id,
+          items: items.map((i) => ({
+            productId: i.productId,
+            name: i.name,
+            quantity: i.qty,
+            unitPrice: i.unitPriceCents / 100,
+            lineTotal: i.lineTotalCents / 100,
+          })),
+          subtotal: totals.subtotal,
+          tax: totals.taxAmount,
+          discount: 0,
+          total: totals.total,
+          paymentMethod: method,
+          customerId,
+          customerName: finalCustomerName,
+          cashierId: user?.id || null,
+          cashierName: user?.name || null,
+          status: 'completed',
+          createdAt: now,
+          date: now,
+          source: 'pos',
+        } as any)
+        setReceiptOpen(false)
+        setCheckoutStep('complete')
+        setCustomerName(walkInName)
+        setCart({})
+
+        toast({
+          title: 'Sale saved offline',
+          description: `Receipt saved locally • will sync when online`,
+        })
+      } else {
+        // Non-network error - rollback optimistic updates
+        Object.entries(stockDeltas).forEach(([productId, delta]) => {
+          dispatch(applyLocalStockDelta({ productId, delta: -delta }))
+        })
+        dispatch(removeOfflineReceipt(localReceiptId))
+
+        setCheckoutStep('payment')
+        toast({
+          title: 'Checkout failed',
+          description: err instanceof Error ? err.message : 'Unable to complete the sale',
+          variant: 'destructive',
+        })
+}
     }
   }
 
@@ -447,6 +575,22 @@ export default function TerminalPage() {
 
       <div className="flex gap-4 h-[calc(100vh-7rem)] animate-fade-in">
         <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {!isOnline && (
+                <div className="flex items-center gap-1.5 text-red-500 text-sm">
+                  <WifiOff className="size-4" />
+                  <span>Offline mode - changes sync when online</span>
+                </div>
+              )}
+              {isOnline && (
+                <div className="flex items-center gap-1.5 text-emerald-500 text-sm">
+                  <Wifi className="size-4" />
+                  <span>Online</span>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2 mb-3">
             <div className="relative flex-1">
               <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -681,7 +825,7 @@ export default function TerminalPage() {
                             </span>
                             <button
                               onClick={() => setLineQty(item.productId, item.qty + 1)}
-                              disabled={item.qty >= item.availableQty}
+                              disabled={item.qty >= item.effectiveQty}
                               type="button"
                               className="w-7 h-7 flex items-center justify-center hover:bg-muted transition-colors rounded-r-sm disabled:opacity-50"
                             >

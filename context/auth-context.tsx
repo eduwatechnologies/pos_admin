@@ -19,6 +19,18 @@ function toAppUser(u: { id: string; email: string; name: string; role: string; i
   }
 }
 
+function isNetworkError(error: any): boolean {
+  if (!error) return false
+  if (error.name === 'NetworkError' || error.name === 'TypeError') return true
+  if (error.message?.includes('fetch') || error.message?.includes('network')) return true
+  if (error.status === undefined && error.code === 'ERR_NETWORK') return true
+  return false
+}
+
+function isAuthError(error: any): boolean {
+  return error?.status === 401
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch()
   const [hasToken, setHasToken] = useState(false)
@@ -84,10 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (isMeError) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user')
-      dispatch(clearCredentials())
-      setHasToken(false)
+      // Only logout on 401 Unauthorized, NOT on network/fetch errors
+      const originalError = (useMeQuery as any)?.error || (meData as any)?.error
+      if (isAuthError(originalError)) {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        dispatch(clearCredentials())
+        setHasToken(false)
+      }
+      // else: network error - keep token + cached user, mark as offline mode
     }
   }, [dispatch, hasToken, isMeError, meData?.user])
 

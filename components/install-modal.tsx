@@ -183,21 +183,23 @@ type InstallModalDialogProps = {
 
 export function InstallModalDialog({ open, onOpenChange }: InstallModalDialogProps) {
   const { isOpen, setIsOpen, isStandalone, isAvailable } = useInstallModal()
-  const install = async () => {
-    const prompt = (typeof window !== 'undefined' ? window.__kounterInstallPrompt : null)
-    if (!prompt) return false
+  const handleInstall = useCallback(async () => {
+    setIsInstalling(true)
     try {
+      const prompt = (typeof window !== 'undefined' ? window.__kounterInstallPrompt : null)
+      if (!prompt) return
+
       await prompt.prompt()
       const { outcome } = await prompt.userChoice
       if (outcome === 'accepted') {
         setIsOpen(false)
-        return true
       }
-      return false
     } catch {
-      return false
+      // ignore
+    } finally {
+      setIsInstalling(false)
     }
-  }
+  }, [setIsOpen])
   const [isInstalling, setIsInstalling] = useState(false)
   const [installState, setInstallState] = useState<'idle' | 'success' | 'dismissed'>('idle')
   const [activeTab, setActiveTab] = useState<Platform>('chrome-desktop')

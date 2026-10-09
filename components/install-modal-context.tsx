@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useCallback, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 type InstallModalContextValue = {
   isOpen: boolean
