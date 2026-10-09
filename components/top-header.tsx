@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { Bell, ChevronDown, LogOut } from 'lucide-react'
+import { Bell, ChevronDown, Download, LogOut } from 'lucide-react'
 
 import { useAuth } from '@/context/auth-context'
 import { ShopSwitcherInline } from '@/components/shop-switcher-inline'
@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/dialog'
 import { useGetBillingSubscriptionQuery } from '@/redux/api/billing-api'
 import { cn } from '@/lib/utils'
+import { useInstallPrompt } from '@/components/install-prompt'
+import { useInstallModal } from '@/components/install-modal-context'
 
 function getTitleFromPath(pathname: string) {
   if (pathname.startsWith('/supplier-bills')) return 'Supplier Bills'
@@ -147,6 +149,8 @@ export function TopHeader() {
     const saved = window.localStorage.getItem('nav_layout')
     return saved === 'topbar' ? 'topbar' : 'sidebar'
   })
+  const { isStandalone } = useInstallPrompt()
+  const { open: openInstallModal } = useInstallModal()
 
   const isAuthed = Boolean(user)
   const skipBilling = !isAuthed || !currentShop
@@ -198,6 +202,18 @@ export function TopHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          {!isStandalone && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={openInstallModal}
+              aria-label="Install Kounter POS as an app"
+            >
+              <Download className="size-4" />
+              <span className="hidden sm:inline">Install</span>
+            </Button>
+          )}
           {isAdmin && <ShopSwitcherInline />}
           {currentShop ? (
             <button

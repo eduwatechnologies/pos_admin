@@ -10,6 +10,18 @@ import { useGetBillingSubscriptionQuery, useListBillingPlansQuery } from '@/redu
 import { useGetSettingsQuery } from '@/redux/api/settings-api'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import {
+  InstallModalDialog,
+} from '@/components/install-modal'
+import {
+  InstallModalProvider,
+  useInstallModal,
+} from '@/components/install-modal-context'
+
+function InstallModalMount() {
+  const { isOpen, setIsOpen } = useInstallModal()
+  return <InstallModalDialog open={isOpen} onOpenChange={setIsOpen} />
+}
 
 function BillingBanner() {
   const router = useRouter()
@@ -306,7 +318,7 @@ export function LayoutContent({
   }, [canUse, currentShop, pathname, router, subscription, user])
 
   return (
-    <>
+    <InstallModalProvider>
       <style jsx global>{`
         :root {
           --sidebar-width: 240px;
@@ -341,6 +353,7 @@ export function LayoutContent({
         {/* <PageHeader /> */}
         {children}
       </main>
-    </>
+      <InstallModalMount />
+    </InstallModalProvider>
   )
 }
