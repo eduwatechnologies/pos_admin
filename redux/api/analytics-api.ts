@@ -18,6 +18,44 @@ export const analyticsApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Analytics'],
     }),
+    salesTrend: build.query<
+      { month: string; totalSales: number; transactions: number }[],
+      { shopId: string; from: string; to: string }
+    >({
+      query: ({ shopId, from, to }) => ({
+        url: `/shops/${shopId}/analytics/sales-trend`,
+        method: 'GET',
+        params: { from, to },
+      }),
+      transformResponse: (response: any) => {
+        const items = Array.isArray(response?.items) ? response.items : []
+        return items.map((item: any) => ({
+          month: String(item?.month ?? ''),
+          totalSales: Number(item?.totalSalesCents ?? 0) / 100,
+          transactions: Number(item?.transactions ?? 0),
+        }))
+      },
+      providesTags: ['Analytics'],
+    }),
+    paymentBreakdown: build.query<
+      { paymentMethod: string; count: number; total: number }[],
+      { shopId: string; from?: string; to?: string }
+    >({
+      query: ({ shopId, from, to }) => ({
+        url: `/shops/${shopId}/analytics/payment-breakdown`,
+        method: 'GET',
+        params: { from, to },
+      }),
+      transformResponse: (response: any) => {
+        const items = Array.isArray(response?.items) ? response.items : []
+        return items.map((item: any) => ({
+          paymentMethod: String(item?.paymentMethod ?? 'other'),
+          count: Number(item?.count ?? 0),
+          total: Number(item?.totalCents ?? 0) / 100,
+        }))
+      },
+      providesTags: ['Analytics'],
+    }),
     bestSellers: build.query<{ name: string; qty: number; revenue: number }[], { shopId: string; from?: string; to?: string }>({
       query: ({ shopId, from, to }) => ({
         url: `/shops/${shopId}/analytics/best-sellers`,
@@ -56,5 +94,10 @@ export const analyticsApi = baseApi.injectEndpoints({
   }),
 })
 
-export const { useRevenueQuery, useBestSellersQuery, useEmployeePerformanceQuery } = analyticsApi
-
+export const {
+  useRevenueQuery,
+  useSalesTrendQuery,
+  usePaymentBreakdownQuery,
+  useBestSellersQuery,
+  useEmployeePerformanceQuery,
+} = analyticsApi

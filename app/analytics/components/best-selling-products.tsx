@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { PackageOpen } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   BarChart,
@@ -57,11 +58,18 @@ export function BestSellingProducts() {
     >
       <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
         <CardHeader className="pb-2">
-          <CardTitle>Top Selling Products</CardTitle>
+          <CardTitle>Top selling products</CardTitle>
           <p className="text-xs text-muted-foreground">Highest revenue generating items this month</p>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px] w-full pt-4">
+          {chartData.length === 0 ? (
+            <div className="flex h-[220px] flex-col items-center justify-center text-center">
+              <PackageOpen className="mb-3 size-7 text-muted-foreground/60" />
+              <p className="text-sm font-medium">No product sales yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">Best sellers will appear after completed sales.</p>
+            </div>
+          ) : (
+          <div className="h-[340px] w-full pt-4">
             <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
               <BarChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: 60 }}>
                 <CartesianGrid 
@@ -112,6 +120,7 @@ export function BestSellingProducts() {
               </BarChart>
             </ChartContainer>
           </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

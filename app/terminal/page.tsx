@@ -627,7 +627,7 @@ const handlePayment = async (method: 'cash' | 'card' | 'transfer') => {
                 <Camera className="w-4 h-4" />
                 <span className="hidden sm:inline">Scan</span>
               </button>
-            )}
+            )} 
           </div>
 
           {scannerOpen ? (

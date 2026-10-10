@@ -14,7 +14,15 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch()
   const currentShopId = useAppSelector((s) => s.shops.currentShopId)
 
-  const { data: shops = [] } = useListShopsQuery(undefined, { skip: !isAuthenticated })
+  const {
+    data: shops = [],
+    isFetching: shopsIsFetching,
+    isError: shopsIsError,
+    refetch: refetchShops,
+  } = useListShopsQuery(undefined, {
+    skip: !isAuthenticated,
+    refetchOnMountOrArgChange: true,
+  })
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -51,6 +59,9 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentShop,
         shops,
+        shopsIsFetching,
+        shopsIsError,
+        refetchShops,
         setCurrentShop,
         addShop,
       }}

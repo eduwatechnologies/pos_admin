@@ -15,6 +15,9 @@ export interface Shop {
 export interface ShopContextType {
   currentShop: Shop | null
   shops: Shop[]
+  shopsIsFetching: boolean
+  shopsIsError: boolean
+  refetchShops: () => void
   setCurrentShop: (shop: Shop) => void
   addShop: (shop: Shop) => void
 }
