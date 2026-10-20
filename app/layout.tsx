@@ -7,6 +7,7 @@ import { ShopProvider } from '@/context/shop-context'
 import { ReduxProvider } from '@/redux/provider'
 import { LayoutContent } from '@/components/layout-content'
 import { PWAProvider } from '@/components/pwa-provider'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const fontSans = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
@@ -64,6 +65,7 @@ export default function RootLayout({
           </AuthProvider>
         </ReduxProvider>
         <PWAProvider />
+        <Toaster />
         <Analytics />
       </body>
     </html>

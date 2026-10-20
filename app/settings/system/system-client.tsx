@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 import {
   useGetBillingSubscriptionQuery,
   useInitializePaystackMutation,
@@ -53,7 +54,8 @@ export default function SettingsSystemClient() {
     if (!error) return
     toast({
       title: 'Error',
-      description: (error as any)?.data?.error ?? (error as any)?.data?.message ?? 'Failed to load settings',
+      error,
+      fallback: 'Failed to load settings',
       variant: 'destructive',
     })
   }, [error, toast])
@@ -62,7 +64,8 @@ export default function SettingsSystemClient() {
     if (!plansError) return
     toast({
       title: 'Error',
-      description: (plansError as any)?.data?.error ?? (plansError as any)?.data?.message ?? 'Failed to load billing plans',
+      error: plansError,
+      fallback: 'Failed to load billing plans',
       variant: 'destructive',
     })
   }, [plansError, toast])
@@ -72,7 +75,7 @@ export default function SettingsSystemClient() {
     toast({
       title: 'Error',
       description:
-        (subscriptionError as any)?.data?.error ?? (subscriptionError as any)?.data?.message ?? 'Failed to load subscription',
+        getApiErrorMessage(subscriptionError, 'Failed to load subscription'),
       variant: 'destructive',
     })
   }, [subscriptionError, toast])
@@ -97,10 +100,8 @@ export default function SettingsSystemClient() {
       } catch (err) {
         toast({
           title: 'Payment verification failed',
-          description:
-            (err as any)?.data?.error ??
-            (err as any)?.data?.message ??
-            (err instanceof Error ? err.message : 'Unable to verify payment'),
+          error: err,
+          fallback: 'Unable to verify payment',
           variant: 'destructive',
         })
       } finally {
@@ -122,10 +123,8 @@ export default function SettingsSystemClient() {
     } catch (err) {
       toast({
         title: 'Error',
-        description:
-          (err as any)?.data?.error ??
-          (err as any)?.data?.message ??
-          (err instanceof Error ? err.message : 'Failed to save settings'),
+        error: err,
+        fallback: 'Failed to save settings',
         variant: 'destructive',
       })
     }
@@ -145,8 +144,8 @@ export default function SettingsSystemClient() {
     } catch (err) {
       toast({
         title: 'Error',
-        description:
-          (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to start payment'),
+        error: err,
+        fallback: 'Failed to start payment',
         variant: 'destructive',
       })
     }

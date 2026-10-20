@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import {
   useCreateRoleMutation,
@@ -102,7 +103,8 @@ export default function SettingsPermissionsPage() {
     if (!error) return
     toast({
       title: 'Error',
-      description: (error as any)?.data?.error ?? (error as any)?.data?.message ?? 'Failed to load settings',
+      error,
+      fallback: 'Failed to load settings',
       variant: 'destructive',
     })
   }, [error, toast])
@@ -128,10 +130,8 @@ export default function SettingsPermissionsPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description:
-          (err as any)?.data?.error ??
-          (err as any)?.data?.message ??
-          (err instanceof Error ? err.message : 'Failed to delete role'),
+        error: err,
+        fallback: 'Failed to delete role',
         variant: 'destructive',
       })
     }
@@ -169,10 +169,8 @@ export default function SettingsPermissionsPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description:
-          (err as any)?.data?.error ??
-          (err as any)?.data?.message ??
-          (err instanceof Error ? err.message : 'Failed to create role'),
+        error: err,
+        fallback: 'Failed to create role',
         variant: 'destructive',
       })
     }
@@ -190,7 +188,7 @@ export default function SettingsPermissionsPage() {
       toast({
         title: 'Error',
         description:
-          (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to save settings'),
+          getApiErrorMessage(err, 'Failed to save settings'),
         variant: 'destructive',
       })
     }
@@ -398,9 +396,7 @@ export default function SettingsPermissionsPage() {
                                     toast({
                                       title: 'Error',
                                       description:
-                                        (err as any)?.data?.error ??
-                                        (err as any)?.data?.message ??
-                                        (err instanceof Error ? err.message : 'Failed to rename role'),
+                                        getApiErrorMessage(err, 'Failed to rename role'),
                                       variant: 'destructive',
                                     })
                                   })

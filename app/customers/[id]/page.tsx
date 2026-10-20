@@ -33,7 +33,7 @@ export default function CustomerDetailPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load customer activity', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load customer activity', variant: 'destructive' })
   }, [error, toast])
 
   const customer = data?.customer ?? null
@@ -189,4 +189,3 @@ export default function CustomerDetailPage() {
     </div>
   )
 }
-

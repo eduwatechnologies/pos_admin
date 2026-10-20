@@ -31,7 +31,7 @@ export default function InventoryPage() {
     }
   }, [isAuthenticated, router])
 
-  const { data: products = [], isFetching: isLoading, error } = useListProductsQuery(
+  const { data: products = [], isFetching: isLoading, error: productsError } = useListProductsQuery(
     { shopId: currentShop?.id ?? '' },
     { skip: !isAuthenticated || !currentShop }
   )
@@ -48,19 +48,21 @@ export default function InventoryPage() {
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation()
 
   useEffect(() => {
-    if (!error) return
+    if (!productsError) return
     toast({
       title: 'Error',
-      description: 'Failed to load products',
+      error: productsError,
+      fallback: 'Failed to load products',
       variant: 'destructive',
     })
-  }, [error, toast])
+  }, [productsError, toast])
 
   useEffect(() => {
     if (!categoriesError) return
     toast({
       title: 'Error',
-      description: 'Failed to load categories',
+      error: categoriesError,
+      fallback: 'Failed to load categories',
       variant: 'destructive',
     })
   }, [categoriesError, toast])
@@ -134,7 +136,8 @@ export default function InventoryPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save product',
+        error: err,
+        fallback: 'Failed to save product',
         variant: 'destructive',
       })
       throw err
@@ -173,7 +176,8 @@ export default function InventoryPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to delete product',
+        error: err,
+        fallback: 'Failed to delete product',
         variant: 'destructive',
       })
     }

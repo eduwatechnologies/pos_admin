@@ -45,7 +45,15 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: (response: any) => ({ user: mapUser(response?.user) }),
       providesTags: ['Auth'],
     }),
+    adminResetPassword: build.mutation<{ ok: boolean }, { email: string; password: string }>({
+      query: (body) => ({
+        url: '/auth/admin/reset-password',
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: (response: any) => ({ ok: Boolean(response?.ok) }),
+    }),
   }),
 })
 
-export const { useRegisterMutation, useLoginMutation, useMeQuery } = authApi
+export const { useRegisterMutation, useLoginMutation, useMeQuery, useAdminResetPasswordMutation } = authApi

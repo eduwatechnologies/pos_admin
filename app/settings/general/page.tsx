@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 import { useGetSettingsQuery, useUpdateSettingsMutation } from '@/redux/api/settings-api'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -79,7 +80,8 @@ export default function SettingsGeneralPage() {
     if (!error) return
     toast({
       title: 'Error',
-      description: (error as any)?.data?.error ?? (error as any)?.data?.message ?? 'Failed to load settings',
+      error,
+      fallback: 'Failed to load settings',
       variant: 'destructive',
     })
   }, [error, toast])
@@ -158,7 +160,7 @@ export default function SettingsGeneralPage() {
       toast({
         title: 'Error',
         description:
-          (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to save settings'),
+          getApiErrorMessage(err, 'Failed to save settings'),
         variant: 'destructive',
       })
     }

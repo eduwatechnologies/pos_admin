@@ -4,6 +4,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useShop } from '@/context/shop-context'
 import { useAuth } from '@/context/auth-context'
 import { useToast } from '@/hooks/use-toast'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 import { useListOnlineOrdersQuery, useUpdateOnlineOrderStatusMutation, type ApiOnlineOrder } from '@/redux/api/receipts-api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -98,7 +99,7 @@ export default function StorefrontOrdersPage() {
     return args
   }, [currentShop?.id, statusFilter, debouncedSearch])
 
-  const { data: orders = [], isLoading, isError } = useListOnlineOrdersQuery(queryArgs, {
+  const { data: orders = [], isLoading, isError, error } = useListOnlineOrdersQuery(queryArgs, {
     skip: !isAuthenticated || !currentShop,
   })
 
@@ -129,7 +130,7 @@ export default function StorefrontOrdersPage() {
     } catch (error: any) {
       toast({
         title: 'Update failed',
-        description: error?.data?.error ?? 'Could not update the order status.',
+        description: getApiErrorMessage(error, 'Could not update the order status.'),
         variant: 'destructive',
       })
     }
@@ -186,7 +187,9 @@ export default function StorefrontOrdersPage() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading orders…</p>
           ) : isError ? (
-            <p className="text-sm text-destructive">Failed to load storefront orders.</p>
+            <p className="text-sm text-destructive">
+              {getApiErrorMessage(error, 'Failed to load storefront orders.')}
+            </p>
           ) : ordered.length === 0 ? (
             <p className="text-sm text-muted-foreground">No online orders yet.</p>
           ) : (

@@ -10,6 +10,7 @@ import {
   Cog,
   Folder,
   History,
+  KeyRound,
   LogOut,
   Menu,
   Package,
@@ -300,6 +301,9 @@ export function Sidebar() {
                             { href: '/settings/general', label: 'General', icon: SlidersHorizontal },
                             { href: '/settings/permissions', label: 'Roles', icon: Shield },
                             { href: '/settings/system', label: 'System', icon: Cog },
+                            ...(user.role === 'admin' || user.role === 'super_admin'
+                              ? [{ href: '/settings/password-reset', label: 'Password reset', icon: KeyRound }]
+                              : []),
                           ].map((sub) => {
                             const active = isActive(sub.href)
                             const SubIcon = sub.icon

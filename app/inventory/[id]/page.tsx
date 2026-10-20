@@ -35,7 +35,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load product details', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load product details', variant: 'destructive' })
   }, [error, toast])
 
   const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
@@ -80,8 +80,8 @@ export default function ProductDetailPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description:
-          (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to adjust stock'),
+        error: err,
+        fallback: 'Failed to adjust stock',
         variant: 'destructive',
       })
     }

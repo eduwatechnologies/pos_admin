@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
 import { useRouter } from 'next/navigation'
@@ -29,15 +29,6 @@ export default function EmployeesPage() {
   const { currentShop } = useShop()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>()
-
-  const toErrorMessage = useCallback((err: any) => {
-    const dataError = err?.data?.error ?? err?.data?.message
-    if (dataError) return String(dataError)
-    if (err?.error) return String(err.error)
-    if (typeof err?.status === 'number') return `Request failed (${err.status})`
-    if (err instanceof Error) return err.message
-    return 'Something went wrong'
-  }, [])
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -95,10 +86,11 @@ export default function EmployeesPage() {
     if (!error) return
     toast({
       title: 'Error',
-      description: toErrorMessage(error),
+      error,
+      fallback: 'Failed to load employees',
       variant: 'destructive',
     })
-  }, [error, toast, toErrorMessage])
+  }, [error, toast])
 
   if (!isAuthenticated) {
     return null
@@ -182,7 +174,8 @@ export default function EmployeesPage() {
       if (err instanceof Error && err.message === 'Missing password') return
       toast({
         title: 'Error',
-        description: toErrorMessage(err),
+        error: err,
+        fallback: 'Failed to save employee',
         variant: 'destructive',
       })
       throw err
@@ -221,7 +214,8 @@ export default function EmployeesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: toErrorMessage(err),
+        error: err,
+        fallback: 'Failed to delete employee',
         variant: 'destructive',
       })
     }

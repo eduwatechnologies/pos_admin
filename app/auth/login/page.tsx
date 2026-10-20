@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { AlertCircle, EyeIcon, EyeOffIcon, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 
 export default function LoginPage() {
   const [email, setEmail] = useState(() =>
@@ -45,20 +46,7 @@ export default function LoginPage() {
   }, [router])
 
   function getErrorMessage(err: unknown) {
-    if (typeof err === 'string') return err
-    if (err instanceof Error) return err.message
-    if (typeof err === 'object' && err) {
-      const anyErr = err as Record<string, unknown>
-      const data = anyErr.data as unknown
-      if (typeof data === 'object' && data) {
-        const anyData = data as Record<string, unknown>
-        const message = anyData.message
-        if (typeof message === 'string') return message
-      }
-      const message = anyErr.message
-      if (typeof message === 'string') return message
-    }
-    return 'An error occurred'
+    return getApiErrorMessage(err, 'An error occurred')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

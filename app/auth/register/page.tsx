@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -31,20 +32,7 @@ export default function RegisterPage() {
   }, [isAuthenticated, router])
 
   function getErrorMessage(err: unknown) {
-    if (typeof err === 'string') return err
-    if (err instanceof Error) return err.message
-    if (typeof err === 'object' && err) {
-      const anyErr = err as Record<string, unknown>
-      const data = anyErr.data as unknown
-      if (typeof data === 'object' && data) {
-        const anyData = data as Record<string, unknown>
-        const message = anyData.error ?? anyData.message
-        if (typeof message === 'string') return message
-      }
-      const message = anyErr.message
-      if (typeof message === 'string') return message
-    }
-    return 'An error occurred'
+    return getApiErrorMessage(err, 'An error occurred')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -168,18 +156,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
-            <Input
-              id="currency"
-              value={currency}
-              onChange={(e) => {
-                setCurrency(e.target.value)
-                if (error) setError('')
-              }}
-              placeholder="NGN"
-            />
-          </div>
 
           <Button type="submit" className="w-full gap-2" disabled={isLoading}>
             {isLoading ? (

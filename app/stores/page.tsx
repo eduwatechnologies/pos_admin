@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
 import { useToast } from '@/hooks/use-toast'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -45,7 +46,8 @@ export default function StoresPage() {
     if (!error) return
     toast({
       title: 'Error',
-      description: (error as any)?.data?.error ?? (error as any)?.data?.message ?? 'Failed to load stores',
+      error,
+      fallback: 'Failed to load stores',
       variant: 'destructive',
     })
   }, [error, toast])
@@ -178,7 +180,7 @@ export default function StoresPage() {
                     description:
                       (err as any)?.data?.error ??
                       (err as any)?.data?.message ??
-                      (err instanceof Error ? err.message : 'Failed to create store'),
+                      getApiErrorMessage(err, 'Failed to create store'),
                     variant: 'destructive',
                   })
                 }

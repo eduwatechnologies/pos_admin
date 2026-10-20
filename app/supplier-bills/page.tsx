@@ -84,7 +84,7 @@ export default function SupplierBillsPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load supplier bills', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load supplier bills', variant: 'destructive' })
   }, [error, toast])
 
   const money = useMemo(() => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'NGN' }), [])
@@ -160,7 +160,8 @@ export default function SupplierBillsPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to create bill'),
+        error: err,
+        fallback: 'Failed to create bill',
         variant: 'destructive',
       })
     }
@@ -226,7 +227,8 @@ export default function SupplierBillsPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to record payment'),
+        error: err,
+        fallback: 'Failed to record payment',
         variant: 'destructive',
       })
     }
@@ -242,7 +244,8 @@ export default function SupplierBillsPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to void bill'),
+        error: err,
+        fallback: 'Failed to void bill',
         variant: 'destructive',
       })
     }

@@ -103,7 +103,7 @@ export default function AuditPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load audit logs', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load audit logs', variant: 'destructive' })
   }, [error, toast])
 
   if (!isAuthenticated) return null

@@ -63,7 +63,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load customers', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load customers', variant: 'destructive' })
   }, [error, toast])
 
   const filtered = useMemo(() => {
@@ -175,7 +175,8 @@ export default function CustomersPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save customer',
+        error: err,
+        fallback: 'Failed to save customer',
         variant: 'destructive',
       })
       setIsSubmitting(false)
@@ -205,7 +206,8 @@ export default function CustomersPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to delete customer',
+        error: err,
+        fallback: 'Failed to delete customer',
         variant: 'destructive',
       })
     }

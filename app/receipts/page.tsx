@@ -87,7 +87,8 @@ export default function ReceiptsPage() {
     if (!error) return
     toast({
       title: 'Error',
-      description: 'Failed to load receipts',
+      error,
+      fallback: 'Failed to load receipts',
       variant: 'destructive',
     })
   }, [error, toast])
@@ -136,8 +137,8 @@ export default function ReceiptsPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description:
-          (err as any)?.data?.error ?? (err as any)?.data?.message ?? (err instanceof Error ? err.message : 'Failed to refund receipt'),
+        error: err,
+        fallback: 'Failed to refund receipt',
         variant: 'destructive',
       })
     }

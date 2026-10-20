@@ -57,7 +57,7 @@ export default function SuppliersPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load suppliers', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load suppliers', variant: 'destructive' })
   }, [error, toast])
 
   const canManageInventory = useMemo(() => {
@@ -169,7 +169,8 @@ export default function SuppliersPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save supplier',
+        error: err,
+        fallback: 'Failed to save supplier',
         variant: 'destructive',
       })
       setIsSubmitting(false)
@@ -199,7 +200,8 @@ export default function SuppliersPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to delete supplier',
+        error: err,
+        fallback: 'Failed to delete supplier',
         variant: 'destructive',
       })
     }

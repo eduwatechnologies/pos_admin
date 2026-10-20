@@ -55,7 +55,7 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load categories', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load categories', variant: 'destructive' })
   }, [error, toast])
 
   const filtered = useMemo(() => {
@@ -108,7 +108,8 @@ export default function CategoriesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save category',
+        error: err,
+        fallback: 'Failed to save category',
         variant: 'destructive',
       })
       setIsSubmitting(false)
@@ -130,7 +131,8 @@ export default function CategoriesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to delete category',
+        error: err,
+        fallback: 'Failed to delete category',
         variant: 'destructive',
       })
     }

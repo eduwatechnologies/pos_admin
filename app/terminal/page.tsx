@@ -22,6 +22,7 @@ import {
 
 import { useAuth } from '@/context/auth-context'
 import { useShop } from '@/context/shop-context'
+import { getApiErrorMessage } from '@/lib/api/error-message'
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import {
@@ -300,7 +301,8 @@ export default function TerminalPage() {
       setIsCameraStarting(false)
       toast({
         title: 'Camera unavailable',
-        description: err instanceof Error ? err.message : 'Unable to start camera scanner',
+        error: err,
+        fallback: 'Unable to start camera scanner',
         variant: 'destructive',
       })
       setScannerOpen(false)
@@ -554,7 +556,8 @@ const handlePayment = async (method: 'cash' | 'card' | 'transfer') => {
         setCheckoutStep('payment')
         toast({
           title: 'Checkout failed',
-          description: err instanceof Error ? err.message : 'Unable to complete the sale',
+          error: err,
+          fallback: 'Unable to complete the sale',
           variant: 'destructive',
         })
 }
@@ -1017,7 +1020,7 @@ const handlePayment = async (method: 'cash' | 'card' | 'transfer') => {
                                           description:
                                             err?.data?.error ??
                                             err?.data?.message ??
-                                            (err instanceof Error ? err.message : 'Failed to create customer'),
+                                            getApiErrorMessage(err, 'Failed to create customer'),
                                           variant: 'destructive',
                                         })
                                       }

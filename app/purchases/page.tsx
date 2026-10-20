@@ -91,17 +91,17 @@ export default function PurchasesPage() {
 
   useEffect(() => {
     if (!purchasesError) return
-    toast({ title: 'Error', description: 'Failed to load purchases', variant: 'destructive' })
+    toast({ title: 'Error', error: purchasesError, fallback: 'Failed to load purchases', variant: 'destructive' })
   }, [purchasesError, toast])
 
   useEffect(() => {
     if (!suppliersError) return
-    toast({ title: 'Error', description: 'Failed to load suppliers', variant: 'destructive' })
+    toast({ title: 'Error', error: suppliersError, fallback: 'Failed to load suppliers', variant: 'destructive' })
   }, [suppliersError, toast])
 
   useEffect(() => {
     if (!productsError) return
-    toast({ title: 'Error', description: 'Failed to load products', variant: 'destructive' })
+    toast({ title: 'Error', error: productsError, fallback: 'Failed to load products', variant: 'destructive' })
   }, [productsError, toast])
 
   const canManageInventory = useMemo(() => {
@@ -244,7 +244,8 @@ export default function PurchasesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to create purchase',
+        error: err,
+        fallback: 'Failed to create purchase',
         variant: 'destructive',
       })
       setIsSubmitting(false)
@@ -274,7 +275,8 @@ export default function PurchasesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to void purchase',
+        error: err,
+        fallback: 'Failed to void purchase',
         variant: 'destructive',
       })
     }

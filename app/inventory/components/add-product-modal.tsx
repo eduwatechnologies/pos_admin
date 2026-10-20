@@ -126,7 +126,8 @@ export function AddProductModal({
     } catch (err) {
       toast({
         title: 'Upload failed',
-        description: err instanceof Error ? err.message : 'Upload failed',
+        error: err,
+        fallback: 'Upload failed',
         variant: 'destructive',
       })
     } finally {

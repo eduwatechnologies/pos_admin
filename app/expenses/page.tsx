@@ -64,7 +64,7 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     if (!error) return
-    toast({ title: 'Error', description: 'Failed to load expenses', variant: 'destructive' })
+    toast({ title: 'Error', error, fallback: 'Failed to load expenses', variant: 'destructive' })
   }, [error, toast])
 
   const canManageAnalytics = useMemo(() => {
@@ -170,7 +170,8 @@ export default function ExpensesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to save expense',
+        error: err,
+        fallback: 'Failed to save expense',
         variant: 'destructive',
       })
       setIsSubmitting(false)
@@ -196,7 +197,8 @@ export default function ExpensesPage() {
     } catch (err) {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to delete expense',
+        error: err,
+        fallback: 'Failed to delete expense',
         variant: 'destructive',
       })
     }

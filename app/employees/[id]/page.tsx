@@ -198,7 +198,8 @@ export default function EmployeeDetailPage() {
                 } catch (err) {
                   toast({
                     title: 'Error',
-                    description: err instanceof Error ? err.message : 'Failed to update password',
+                    error: err,
+                    fallback: 'Failed to update password',
                     variant: 'destructive',
                   })
                 } finally {
