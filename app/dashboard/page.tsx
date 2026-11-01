@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -130,7 +130,7 @@ export default function Home() {
     [products],
   )
   const recentReceipts = useMemo(
-    () => [...receipts].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5),
+    () => [...receipts].filter((r) => r && r.date && typeof r.date.getTime === 'function').sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5),
     [receipts],
   )
   const monthlySales = useMemo<MonthlySales[]>(() => {
@@ -360,7 +360,7 @@ export default function Home() {
                       </p>
                       <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span>#{receipt.id.slice(-8).toUpperCase()}</span>
-                        <span aria-hidden="true">·</span>
+                        <span aria-hidden="true">Â·</span>
                         <Clock3 className="size-3" />
                         {receiptTime(receipt)}
                       </p>
@@ -445,3 +445,5 @@ export default function Home() {
     </div>
   )
 }
+
+
