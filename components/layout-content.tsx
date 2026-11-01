@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Sidebar, TopNav } from '@/components/sidebar'
@@ -157,7 +157,7 @@ export function LayoutContent({
       return
     }
     navigationOverlayTimerRef.current = window.setTimeout(() => {
-      setShowNavigationOverlay(true)
+      // setShowNavigationOverlay(true)
     }, 150)
     navigationResetTimerRef.current = window.setTimeout(() => {
       setIsNavigating(false)
@@ -324,11 +324,11 @@ export function LayoutContent({
           --sidebar-width: 240px;
         }
       `}</style>
-      {showNavigationOverlay ? (
+      {false ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background/70 backdrop-blur-sm">
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
             <Loader2 className="size-5 animate-spin text-primary" />
-            <div className="text-sm font-medium text-card-foreground">Loading…</div>
+            <div className="text-sm font-medium text-card-foreground">Loadingâ€¦</div>
           </div>
         </div>
       ) : null}
@@ -357,3 +357,5 @@ export function LayoutContent({
     </InstallModalProvider>
   )
 }
+
+
